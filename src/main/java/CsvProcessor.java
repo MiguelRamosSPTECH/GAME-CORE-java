@@ -5,85 +5,30 @@ import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class CsvProcessor {
-    public void leExibeArquivoCsv(String nomeArq) {
-        FileReader arq = null;      // arq corresponde ao arquivo
-        Scanner entrada = null;     // entrada eh o objeto usado para ler do arquivo
-        Boolean deuRuim = false;
-        nomeArq += ".csv";
 
-        // Bloco try-catch para abrir o arquivo
-        try {
-            arq = new FileReader(nomeArq);  // Abre o arquivo para leitura
-            // Instancia a classe Scanner e especifica que deve usar delimitador ; ou \n
-            entrada = new Scanner(arq).useDelimiter(";|\\n");
-        }
-        catch (FileNotFoundException erro) {
-            System.out.println("Arquivo inexistente!");
-            System.exit(1);
-        }
+    private final ConfiguracaoServidorDAO configuracaoDAO;
+    private final List<ColetaServidor> dadosEmAlertaServidor = new ArrayList<>();
+    private final List<ColetaContainer> dadosEmAlertaContainer = new ArrayList<>();
 
-        // Bloco try-catch para ler e fechar o arquivo
-        try {
-            Boolean cabecalho = true;
-            // Enquanto nao chegou ao final do arquivo
-            while (entrada.hasNext()) {
-                if (cabecalho) {  // se for o cabecalho, le os titulos
-                    String titulo1 = entrada.next();
-                    String titulo2 = entrada.next();
-                    String titulo3 = entrada.next();
-                    String titulo4 = entrada.next();
-                    // Printa os titulos em colunas na console
-                    System.out.printf("%4s %-12s %-9s %4s\n", titulo1,
-                            titulo2, titulo3, titulo4);
-                    cabecalho = false;  // seta que a partir dai nao eh mais cabecalho
-                }
-                else {
-                    Integer id = entrada.nextInt();
-                    String nome = entrada.next();   // NAO USAR nextLine(), pois ai leria ate o final da linha
-                    String porte = entrada.next();
-                    Double peso = entrada.nextDouble();
-                    // Printa os valores dos atributos em colunas na console
-                    // Tamanho das colunas aqui deve ser igual ao tamanho das colunas dos titulos
-                    System.out.printf("%04d %-12.12s %-9S %4.1f\n",
-                            id, nome, porte, peso);
-                }
-            }
-        }
-        catch (NoSuchElementException erro) {
-            System.out.println("Arquivo com problemas!");
-            erro.printStackTrace();
-            deuRuim = true;
-        }
-        catch (IllegalStateException erro) {
-            System.out.println("Erro na leitura do arquivo!");
-            erro.printStackTrace();
-            deuRuim = true;
-        }
-        finally {
-            try {
-                entrada.close();
-                arq.close();
-            }
-            catch (IOException erro) {
-                System.out.println("Erro ao fechar o arquivo");
-                deuRuim = true;
-            }
-            if (deuRuim) {
-                System.exit(1);
-            }
-        }
-
-
+    public CsvProcessor(ConfiguracaoServidorDAO configuracaoDAO) {
+        this.configuracaoDAO = configuracaoDAO;
     }
+
+    public String removeZeroEsquerda(String s){
+        if(s == null){
+            return null;
+        }
+        return s.replaceAll("^0+", "");
+    }
+
 
     public void leImportaArquivoCsvServidor (String nomeArq){
         Reader arq = null;
         BufferedReader entrada = null;
         nomeArq += ".csv";
-        List<Coleta> listaLida = new ArrayList<>();
+        List<ColetaServidor> listaLidaServidor = new ArrayList<>();
 
         //Bloco try catch para abrir o arquivo
-
         try {
             arq = new InputStreamReader(new FileInputStream(nomeArq), "UTF-8");
             entrada = new BufferedReader(arq);
@@ -96,12 +41,27 @@ public class CsvProcessor {
         try {
             String[] registro;
             String linha = entrada.readLine();
+
+            // Pula a primeira linha (cabeçalho)
             registro = linha.split(";");
-            System.out.printf("%s %-19s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n", registro[0], registro[1], registro[2], registro[3], registro[4], registro[5], registro[6], registro[7], registro[8], registro[9], registro[10], registro[11], registro[12], registro[13], registro[14], registro[15], registro[16], registro[17], registro[18], registro[19],registro[20], registro[21], registro[22], registro[23]);
+
+
+            System.out.printf("%s %-19s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n",
+                    registro[0], registro[1], registro[2], registro[3], registro[4], registro[5], registro[6], registro[7], registro[8], registro[9],
+                    registro[10], registro[11], registro[12], registro[13], registro[14], registro[15], registro[16], registro[17], registro[18], registro[19],
+                    registro[20], registro[21], registro[22], registro[23], registro[24], registro[25]);
+
             linha = entrada.readLine();
             while (linha != null){
                 registro = linha.split(";");
-                String user = registro[0];
+
+                //For para tratar e retirar 0 à esquerda
+                for (int i = 0; i < registro.length; i++) {
+                    registro[i] = removeZeroEsquerda(registro[i]);
+                }
+
+                // 1. Extração dos dados (26 campos)
+                String macAddress = registro[0];
                 String timestamp = registro[1];
                 Double cpu_porcentagem = Double.valueOf(registro[2]);
                 Double cpuOciosa = Double.valueOf(registro[3]);
@@ -125,27 +85,69 @@ public class CsvProcessor {
                 Double discoDisponivelGb = Double.valueOf(registro[21]);
                 Double discoThroughputMbs = Double.valueOf(registro[22]);
                 Double discoThroughputGbs = Double.valueOf(registro[23]);
+                Double mbEnviados = Double.valueOf(registro[24]);
+                Double mbRecebidos = Double.valueOf(registro[25]);
 
-                Coleta dados = new Coleta(user,timestamp,cpu_porcentagem,cpuOciosa,cpuUsuario,cpuSistema, cpuLoadAvg,ram,ramMb,ramGb,ramDisponivel,ramDisponivelMb,ramDisponivelGb,
-                        ramSwap,ramSwapMb,ramSwapGb,disco,discoMb, discoGb,discoDisponivel,discoDisponivelMb,discoDisponivelGb,discoThroughputMbs,discoThroughputGbs);
-                listaLida.add(dados);
+
+                // 2. BUSCA DO ALERTA E FILTRAGEM
+                String nomeComponente = "CPU";
+                String unidadeMedida = "porcentagem";
+
+                ConfiguracaoServidor configAlerta =
+                        this.configuracaoDAO.buscarConfiguracaoPorMac(
+                                macAddress,
+                                nomeComponente,
+                                unidadeMedida
+                        );
+
+                // 3. Aplica o filtro
+                if (configAlerta != null) {
+                    try {
+                        Double limiteGrave = Double.valueOf(configAlerta.getAlertaGrave());
+
+                        if (cpu_porcentagem > limiteGrave) {
+                            // ALERTA ACIONADO: Cria o objeto com os 26 argumentos
+                            ColetaServidor dados = new ColetaServidor(
+                                    macAddress, timestamp, cpu_porcentagem, cpuOciosa, cpuUsuario, cpuSistema, cpuLoadAvg,
+                                    ram, ramMb, ramGb, ramDisponivel, ramDisponivelMb, ramDisponivelGb,
+                                    ramSwap, ramSwapMb, ramSwapGb, disco, discoMb, discoGb, discoDisponivel, discoDisponivelMb, discoDisponivelGb,
+                                    discoThroughputMbs, discoThroughputGbs,
+                                    mbEnviados, mbRecebidos // <-- NOVOS ARGUMENTOS AQUI
+                            );
+                            dadosEmAlertaServidor.add(dados); // Adiciona na lista de ALERTA
+                        }
+                    } catch (NumberFormatException e) {
+                        System.err.println("Erro: Limite de alerta grave ('" + configAlerta.getAlertaGrave() + "') não é um número válido.");
+                    }
+                }
+
+                // Esta linha pode ser removida se você só quiser a lista de alertas
+                // listaLidaServidor.add(dados);
+
                 linha = entrada.readLine();
             }
-        } catch (IOException erro) {
-            System.out.println("Erro ao ler o arquivo");
+        } catch (IOException | NumberFormatException | ArrayIndexOutOfBoundsException erro) { // Incluído AIOOBE para caso o CSV não tenha 26 colunas
+            System.out.println("Erro ao ler ou processar dados do arquivo (Verifique se o CSV tem 26 colunas).");
             erro.printStackTrace();
         } finally {
             try{
-                entrada.close();
-                arq.close();
+                if (entrada != null) entrada.close();
+                if (arq != null) arq.close();
             } catch (IOException e) {
-                System.out.println("erro ao fechar o arquivo");
+                System.out.println("Erro ao fechar o arquivo.");
             }
         }
 
-        System.out.println("\nLista lida do arquivo: ");
-        for (Coleta c : listaLida){
-            System.out.println(c);
+        // FINALIZAÇÃO: Mostra a lista de alertas
+        System.out.println("\n=================================================");
+        System.out.println("LISTA FINAL DE ALERTA DO SERVIDOR GERADA:");
+        System.out.println("=================================================");
+        if (dadosEmAlertaServidor.isEmpty()) {
+            System.out.println("Nenhum alerta grave detectado nos dados lidos.");
+        } else {
+            for (ColetaServidor c : dadosEmAlertaServidor){
+                System.out.println(c);
+            }
         }
     }
 
@@ -153,9 +155,7 @@ public class CsvProcessor {
         Reader arq = null;
         BufferedReader entrada = null;
         nomeArq += ".csv";
-        List<Coleta> listaLida = new ArrayList<>();
-
-        //Bloco try catch para abrir o arquivo
+        List<ColetaContainer> listaLidaContainer = new ArrayList<>();
 
         try {
             arq = new InputStreamReader(new FileInputStream(nomeArq), "UTF-8");
@@ -165,43 +165,37 @@ public class CsvProcessor {
             System.exit(1);
         }
 
-        //try catch para ler o arquivo
         try {
             String[] registro;
             String linha = entrada.readLine();
             registro = linha.split(";");
-            System.out.printf("%s %-19s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n", registro[0], registro[1], registro[2], registro[3], registro[4], registro[5], registro[6], registro[7], registro[8], registro[9], registro[10], registro[11], registro[12], registro[13], registro[14], registro[15], registro[16], registro[17], registro[18], registro[19],registro[20], registro[21], registro[22], registro[23]);
+            // Se quiser imprimir o cabeçalho, mantenha a linha abaixo
+            // System.out.printf("%s %12s %8s %8s %8s %8s %8s\n", registro[0], registro[1], registro[2], registro[3], registro[4], registro[5], registro[6]);
+
             linha = entrada.readLine();
             while (linha != null){
-                registro = linha.split(";");
-                String servidor = registro[0];
-                String timestamp = registro[1];
-                Double cpu_porcentagem = Double.valueOf(registro[2]);
-                Double cpuOciosa = Double.valueOf(registro[3]);
-                Double cpuUsuario = Double.valueOf(registro[4]);
-                Double cpuSistema = Double.valueOf(registro[5]);
-                String cpuLoadAvg = registro[6];
-                Double ram = Double.valueOf(registro[7]);
-                Double ramMb = Double.valueOf(registro[8]);
-                Double ramGb = Double.valueOf(registro[9]);
-                Double ramDisponivel = Double.valueOf(registro[10]);
-                Double ramDisponivelMb = Double.valueOf(registro[11]);
-                Double ramDisponivelGb = Double.valueOf(registro[12]);
-                Double ramSwap = Double.valueOf(registro[13]);
-                Double ramSwapMb = Double.valueOf(registro[14]);
-                Double ramSwapGb = Double.valueOf(registro[15]);
-                Double disco = Double.valueOf(registro[16]);
-                Double discoMb = Double.valueOf(registro[17]);
-                Double discoGb = Double.valueOf(registro[18]);
-                Double discoDisponivel = Double.valueOf(registro[19]);
-                Double discoDisponivelMb = Double.valueOf(registro[20]);
-                Double discoDisponivelGb = Double.valueOf(registro[21]);
-                Double discoThroughputMbs = Double.valueOf(registro[22]);
-                Double discoThroughputGbs = Double.valueOf(registro[23]);
 
-                Coleta dados = new Coleta(servidor,timestamp,cpu_porcentagem,cpuOciosa,cpuUsuario,cpuSistema, cpuLoadAvg,ram,ramMb,ramGb,ramDisponivel,ramDisponivelMb,ramDisponivelGb,
-                        ramSwap,ramSwapMb,ramSwapGb,disco,discoMb, discoGb,discoDisponivel,discoDisponivelMb,discoDisponivelGb,discoThroughputMbs,discoThroughputGbs);
-                listaLida.add(dados);
+                // CORREÇÃO DE LÓGICA: Pega a linha atual antes de tratar os zeros
+                registro = linha.split(";");
+
+                // For para remover 0 a esquerda
+                for (int i = 0; i < registro.length; i++) {
+                    registro[i] = removeZeroEsquerda(registro[i]);
+                }
+
+                String identificacao_container = registro[0];
+                String timestamp = registro[1];
+                Double cpu_container = Double.valueOf(registro[2]);
+                Double throughput_container = Double.valueOf(registro[3]);
+                Double ram_container = Double.valueOf(registro[4]);
+                Double throttled_time_container = Double.valueOf(registro[5]);
+                Double tps_container = Double.valueOf(registro[6]);
+
+                // A LÓGICA DE ALERTA PARA CONTAINER DEVE SER IMPLEMENTADA AQUI, usando o DAO e buscando a métrica correta.
+
+                ColetaContainer dados = new ColetaContainer(identificacao_container,timestamp,cpu_container,throughput_container,ram_container,throttled_time_container,tps_container);
+                listaLidaContainer.add(dados);
+
                 linha = entrada.readLine();
             }
         } catch (IOException erro) {
@@ -209,15 +203,15 @@ public class CsvProcessor {
             erro.printStackTrace();
         } finally {
             try{
-                entrada.close();
-                arq.close();
+                if (entrada != null) entrada.close();
+                if (arq != null) arq.close();
             } catch (IOException e) {
                 System.out.println("erro ao fechar o arquivo");
             }
         }
 
         System.out.println("\nLista lida do arquivo: ");
-        for (Coleta c : listaLida){
+        for (ColetaContainer c : listaLidaContainer){
             System.out.println(c);
         }
     }
