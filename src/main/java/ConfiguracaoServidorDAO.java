@@ -1,6 +1,11 @@
+import Entity.ConfiguracaoServidor;
+import Entity.Layout;
+import Entity.Servidor;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.dao.EmptyResultDataAccessException;
+
+import java.util.List;
 
 public class ConfiguracaoServidorDAO {
 
@@ -10,33 +15,69 @@ public class ConfiguracaoServidorDAO {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public ConfiguracaoServidor buscarConfiguracaoPorMac(
-            String macaddresServidor,
-            String nomeComponente,
-            String nomeMedida
-    ) {
-
-        String sql = "SELECT cs.alertaLeve, cs.alertaGrave " +
-                "FROM configuracaoservidor cs " +
-                "JOIN layout l ON cs.fk_layout_int = l.id " +
-                "JOIN empresa_servidor es ON l.fk_empresa_layout = es.fk_empresa_servidor " +
-                "JOIN servidor s ON es.fk_servidor = s.id " +
-                "JOIN componente comp ON cs.fk_componente_cs = comp.id " +
-                "JOIN metrica m ON cs.fk_metrica_cs = m.id " +
-                "WHERE s.macaddres = ? " +
-                "AND comp.nome = ? " +
-                "AND m.unidadeMedida = ?";
-
+    public Servidor buscarServidorPorMac(String macaddresServidor) {
         try {
+            String querySql = "SELECT * FROM servidor WHERE macadress = ?";
             return jdbcTemplate.queryForObject(
-                    sql,
-                    new BeanPropertyRowMapper<>(ConfiguracaoServidor.class),
-                    macaddresServidor, nomeComponente, nomeMedida
+                    querySql,
+                    new BeanPropertyRowMapper<>(Servidor.class),
+                    macaddresServidor
             );
-
         } catch (EmptyResultDataAccessException e) {
-            System.err.println("Atenção: Configuração de alerta não encontrada para o MAC: " + macaddresServidor);
+            System.err.println("Servidor não encontrado! - " + macaddresServidor);
             return null;
         }
     }
+
+    public Layout buscarLayoutPorFkEmpresa(Integer fkEmpresa) {
+        try {
+            String querySql = "SELECT * FROM layout WHERE fk_empresa_layout = ? AND emUso = 1";
+            return jdbcTemplate.queryForObject(
+                    querySql,
+                    new BeanPropertyRowMapper<>(Layout.class),
+                    fkEmpresa
+            );
+        } catch (EmptyResultDataAccessException e) {
+            System.err.println("Layout em uso nao encontrado! - PARA EMPRESA DO ID" + fkEmpresa);
+            return null;
+        }
+    }
+    public List<ConfiguracaoServidor> buscarConfiguracaoLayout(Integer fkLayout) {
+        try {
+            String querySql =
+                    "select cs.alertaLeve,cs.alertaGrave, " +
+                            "componente.nome as nome_componente, " +
+                            "metrica.unidadeMedida as nome_metrica " +
+                    "from configuracaoservidor cs\n" +
+                    "inner join \n" +
+                    "componente on \n" +
+                    "cs.fk_componente_cs = componente.id\n" +
+                    "inner join metrica on\n" +
+                    "cs.fk_metrica_cs = metrica.id\n" +
+                    "where fk_layout = ?;";
+            return jdbcTemplate.query(
+                    querySql,
+                    new BeanPropertyRowMapper<>(ConfiguracaoServidor.class),
+                    fkLayout
+            );
+        } catch (EmptyResultDataAccessException e) {
+            System.err.println("NAO EXISTEM COMPONENTES E METRICAS PARA ESSE LAYOUT! FK DO LAYOUT " + fkLayout);
+            return null;
+        }
+    }
+
+    public Layout buscarLayoutPorFkLayout(Integer fkLayout) {
+        try {
+            String querySql = "SELECT * FROM layout where id = ?;";
+            return jdbcTemplate.queryForObject(
+                    querySql,
+                    new BeanPropertyRowMapper<>(Layout.class),
+                    fkLayout
+            );
+        } catch (EmptyResultDataAccessException e) {
+            System.err.println("NAO EXISTEM COMPONENTES E METRICAS PARA ESSE LAYOUT! FK DO LAYOUT " + fkLayout);
+            return null;
+        }
+    }
+
 }

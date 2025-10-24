@@ -1,3 +1,5 @@
+package Entity;
+
 public class ColetaContainer {
     String identificacao_container;
     String timestamp;
@@ -19,7 +21,7 @@ public class ColetaContainer {
 
     @Override
     public String toString() {
-        return "ColetaContainer{" +
+        return "Entity.ColetaContainer{" +
                 "identificacao_container='" + identificacao_container + '\'' +
                 ", timestamp='" + timestamp + '\'' +
                 ", cpu_container=" + cpu_container +

@@ -1,14 +1,15 @@
+import Entity.*;
+
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Scanner;
 
 public class CsvProcessor {
 
     private final ConfiguracaoServidorDAO configuracaoDAO;
-    private final List<ColetaServidor> dadosEmAlertaServidor = new ArrayList<>();
-    private final List<ColetaContainer> dadosEmAlertaContainer = new ArrayList<>();
+    private final List<String> dadosEmAlertaServidor = new ArrayList<>();
+    private final List<ColetaServidor> listaAlertas = new ArrayList<>();
 
     public CsvProcessor(ConfiguracaoServidorDAO configuracaoDAO) {
         this.configuracaoDAO = configuracaoDAO;
@@ -45,7 +46,7 @@ public class CsvProcessor {
             // Pula a primeira linha (cabeçalho)
             registro = linha.split(";");
 
-
+            String[] cabecalho = registro;
             System.out.printf("%s %-19s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n",
                     registro[0], registro[1], registro[2], registro[3], registro[4], registro[5], registro[6], registro[7], registro[8], registro[9],
                     registro[10], registro[11], registro[12], registro[13], registro[14], registro[15], registro[16], registro[17], registro[18], registro[19],
@@ -53,6 +54,7 @@ public class CsvProcessor {
 
             linha = entrada.readLine();
             while (linha != null){
+                ColetaServidor linhaObj = new ColetaServidor();
                 registro = linha.split(";");
 
                 //For para tratar e retirar 0 à esquerda
@@ -61,68 +63,90 @@ public class CsvProcessor {
                 }
 
                 // 1. Extração dos dados (26 campos)
-                String macAddress = registro[0];
-                String timestamp = registro[1];
-                Double cpu_porcentagem = Double.valueOf(registro[2]);
-                Double cpuOciosa = Double.valueOf(registro[3]);
-                Double cpuUsuario = Double.valueOf(registro[4]);
-                Double cpuSistema = Double.valueOf(registro[5]);
-                String cpuLoadAvg = registro[6];
-                Double ram = Double.valueOf(registro[7]);
-                Double ramMb = Double.valueOf(registro[8]);
-                Double ramGb = Double.valueOf(registro[9]);
-                Double ramDisponivel = Double.valueOf(registro[10]);
-                Double ramDisponivelMb = Double.valueOf(registro[11]);
-                Double ramDisponivelGb = Double.valueOf(registro[12]);
-                Double ramSwap = Double.valueOf(registro[13]);
-                Double ramSwapMb = Double.valueOf(registro[14]);
-                Double ramSwapGb = Double.valueOf(registro[15]);
-                Double disco = Double.valueOf(registro[16]);
-                Double discoMb = Double.valueOf(registro[17]);
-                Double discoGb = Double.valueOf(registro[18]);
-                Double discoDisponivel = Double.valueOf(registro[19]);
-                Double discoDisponivelMb = Double.valueOf(registro[20]);
-                Double discoDisponivelGb = Double.valueOf(registro[21]);
-                Double discoThroughputMbs = Double.valueOf(registro[22]);
-                Double discoThroughputGbs = Double.valueOf(registro[23]);
-                Double mbEnviados = Double.valueOf(registro[24]);
-                Double mbRecebidos = Double.valueOf(registro[25]);
+                linhaObj.setMacAddress(registro[0]);
+                linhaObj.setTimestamp(registro[1]);
+                linhaObj.setCpu_porcentagem(Double.valueOf(registro[2]));
+                linhaObj.setCpuOciosa(Double.valueOf(registro[3]));
+                linhaObj.setCpuUsuario(Double.valueOf(registro[4]));
+                linhaObj.setCpuSistema(Double.valueOf(registro[5]));
+                linhaObj.setCpuLoadAvg(registro[6]);
+                linhaObj.setRam(Double.valueOf(registro[7]));
+                linhaObj.setRamMb(Double.valueOf(registro[8]));
+                linhaObj.setRamGb(Double.valueOf(registro[9]));
+                linhaObj.setRamDisponivel(Double.valueOf(registro[10]));
+                linhaObj.setRamDisponivelMb(Double.valueOf(registro[11]));
+                linhaObj.setRamDisponivelGb(Double.valueOf(registro[12]));
+                linhaObj.setRamSwap(Double.valueOf(registro[13]));
+                linhaObj.setRamSwapMb(Double.valueOf(registro[14]));
+                linhaObj.setRamGb(Double.valueOf(registro[15]));
+                linhaObj.setDisco(Double.valueOf(registro[16]));
+                linhaObj.setDiscoMb(Double.valueOf(registro[17]));
+                linhaObj.setDiscoGb(Double.valueOf(registro[18]));
+                linhaObj.setDiscoDisponivel(Double.valueOf(registro[19]));
+                linhaObj.setDiscoDisponivelMb(Double.valueOf(registro[20]));
+                linhaObj.setDiscoDisponivelGb(Double.valueOf(registro[21]));
+                linhaObj.setDiscoThroughputMbs(Double.valueOf(registro[22]));
+                linhaObj.setDiscoThroughputGbs(Double.valueOf(registro[23]));
+                linhaObj.setMbEnviados(Double.valueOf(registro[24]));
+                linhaObj.setMbRecebidos(Double.valueOf(registro[25]));
 
 
-                // 2. BUSCA DO ALERTA E FILTRAGEM
-                String nomeComponente = "CPU";
-                String unidadeMedida = "porcentagem";
-
-                ConfiguracaoServidor configAlerta =
-                        this.configuracaoDAO.buscarConfiguracaoPorMac(
-                                macAddress,
-                                nomeComponente,
-                                unidadeMedida
+                Servidor servidorAchado =
+                        this.configuracaoDAO.buscarServidorPorMac(
+                                linhaObj.getMacAddress()
                         );
 
-                // 3. Aplica o filtro
-                if (configAlerta != null) {
-                    try {
-                        Double limiteGrave = Double.valueOf(configAlerta.getAlertaGrave());
-
-                        if (cpu_porcentagem > limiteGrave) {
-                            // ALERTA ACIONADO: Cria o objeto com os 26 argumentos
-                            ColetaServidor dados = new ColetaServidor(
-                                    macAddress, timestamp, cpu_porcentagem, cpuOciosa, cpuUsuario, cpuSistema, cpuLoadAvg,
-                                    ram, ramMb, ramGb, ramDisponivel, ramDisponivelMb, ramDisponivelGb,
-                                    ramSwap, ramSwapMb, ramSwapGb, disco, discoMb, discoGb, discoDisponivel, discoDisponivelMb, discoDisponivelGb,
-                                    discoThroughputMbs, discoThroughputGbs,
-                                    mbEnviados, mbRecebidos // <-- NOVOS ARGUMENTOS AQUI
+                List<ConfiguracaoServidor> listaConfigs = new ArrayList<>();
+                Layout layoutAchado = null;
+                // ESSE IF SE O SERVIDOR NAO TIVER LAYOUT DE PREFERENCIA
+                if(servidorAchado.getFk_layout() == null) {
+                    //PRIMEIRO ACHA LAYOUT
+                    layoutAchado =
+                            this.configuracaoDAO.buscarLayoutPorFkEmpresa(
+                                    servidorAchado.getFk_empresa_servidor()
                             );
-                            dadosEmAlertaServidor.add(dados); // Adiciona na lista de ALERTA
-                        }
-                    } catch (NumberFormatException e) {
-                        System.err.println("Erro: Limite de alerta grave ('" + configAlerta.getAlertaGrave() + "') não é um número válido.");
-                    }
+                }
+                else { //CASO TENHA LAYOUT DE PREFERENCIA O SERVIDOR
+                    layoutAchado =  this.configuracaoDAO.buscarLayoutPorFkLayout(servidorAchado.getFk_layout());
                 }
 
-                // Esta linha pode ser removida se você só quiser a lista de alertas
-                // listaLidaServidor.add(dados);
+                //DEPOIS ENTRA NAS CONFIGURACOES DO LAYOUT E PEGA COMPONENTE E METRICA E AS FAIXAS DE ALERTA (LISTA)
+                listaConfigs = this.configuracaoDAO.buscarConfiguracaoLayout(layoutAchado.getId());
+
+                String nomeComponente;
+                Boolean linhaEstourada = false;
+                String mensagemAlerta = "";
+                for(int i=0;i<cabecalho.length;i++) {
+                    nomeComponente = "";
+                    String[] cabecalhoSeparado = cabecalho[i].toLowerCase().split("_");
+                    if(cabecalhoSeparado.length > 1) {
+                        for(int j=0;j<cabecalhoSeparado.length-1;j++) {
+                            if(nomeComponente != "") {
+                                nomeComponente+="_"+cabecalhoSeparado[j];
+                            } else {
+                                nomeComponente+=cabecalhoSeparado[j];
+                            }
+                        }
+                    }
+                    for(ConfiguracaoServidor linhaConfig : listaConfigs) {
+                        if(nomeComponente.equalsIgnoreCase(linhaConfig.getNome_componente())) {
+                            if(linhaConfig.getNome_metrica().equals("%")) {
+                                linhaConfig.setNome_metrica("porcentagem");
+                            }
+                            if(cabecalhoSeparado[cabecalhoSeparado.length-1].equalsIgnoreCase(linhaConfig.getNome_metrica())) {
+                                if(Double.parseDouble(registro[i]) > Double.parseDouble(linhaConfig.getAlertaLeve())) {
+                                    linhaEstourada = true;
+                                    mensagemAlerta = registro[1] +" | ALERTA DISPARADO NO SERVIDOR = "+registro[0]+" | MENSAGEM = "+linhaConfig.getNome_componente() + " ESTÁ NA FAIXA DE " + registro[i];
+                                }
+                            }
+                        }
+                    }
+                }
+                if(!mensagemAlerta.equals("")) {
+                    dadosEmAlertaServidor.add(mensagemAlerta);
+                    listaAlertas.add(linhaObj);
+
+                }
 
                 linha = entrada.readLine();
             }
@@ -137,6 +161,7 @@ public class CsvProcessor {
                 System.out.println("Erro ao fechar o arquivo.");
             }
         }
+        gravarArquivoCsv(listaAlertas, "alertas_capturados");
 
         // FINALIZAÇÃO: Mostra a lista de alertas
         System.out.println("\n=================================================");
@@ -145,74 +170,123 @@ public class CsvProcessor {
         if (dadosEmAlertaServidor.isEmpty()) {
             System.out.println("Nenhum alerta grave detectado nos dados lidos.");
         } else {
-            for (ColetaServidor c : dadosEmAlertaServidor){
-                System.out.println(c);
+            for (String linha: dadosEmAlertaServidor){
+                System.out.println(linha);
             }
+            System.out.println("TOTAL DE ALERTAS: "+ dadosEmAlertaServidor.size());
         }
     }
 
-    public void leImportaArquivoCsvContainer (String nomeArq){
-        Reader arq = null;
-        BufferedReader entrada = null;
-        nomeArq += ".csv";
-        List<ColetaContainer> listaLidaContainer = new ArrayList<>();
+    public void gravarArquivoCsv(List<ColetaServidor> listaAlertas, String nomeArquivo) {
+        System.out.println(listaAlertas.size());
+        OutputStreamWriter saida = null;
+
+        Boolean deuRuim = false;
+        nomeArquivo +=".csv";
 
         try {
-            arq = new InputStreamReader(new FileInputStream(nomeArq), "UTF-8");
-            entrada = new BufferedReader(arq);
-        } catch (IOException erro){
-            System.out.println("Erro na abertura de arquivo");
+
+            saida = new OutputStreamWriter(new FileOutputStream(nomeArquivo),
+                    StandardCharsets.UTF_8);
+
+        } catch (IOException e) {
+            System.out.println("Erro ao abrir o arquivo");
             System.exit(1);
         }
-
+        System.out.println(saida);
         try {
-            String[] registro;
-            String linha = entrada.readLine();
-            registro = linha.split(";");
-            // Se quiser imprimir o cabeçalho, mantenha a linha abaixo
-            // System.out.printf("%s %12s %8s %8s %8s %8s %8s\n", registro[0], registro[1], registro[2], registro[3], registro[4], registro[5], registro[6]);
 
-            linha = entrada.readLine();
-            while (linha != null){
-
-                // CORREÇÃO DE LÓGICA: Pega a linha atual antes de tratar os zeros
-                registro = linha.split(";");
-
-                // For para remover 0 a esquerda
-                for (int i = 0; i < registro.length; i++) {
-                    registro[i] = removeZeroEsquerda(registro[i]);
-                }
-
-                String identificacao_container = registro[0];
-                String timestamp = registro[1];
-                Double cpu_container = Double.valueOf(registro[2]);
-                Double throughput_container = Double.valueOf(registro[3]);
-                Double ram_container = Double.valueOf(registro[4]);
-                Double throttled_time_container = Double.valueOf(registro[5]);
-                Double tps_container = Double.valueOf(registro[6]);
-
-                // A LÓGICA DE ALERTA PARA CONTAINER DEVE SER IMPLEMENTADA AQUI, usando o DAO e buscando a métrica correta.
-
-                ColetaContainer dados = new ColetaContainer(identificacao_container,timestamp,cpu_container,throughput_container,ram_container,throttled_time_container,tps_container);
-                listaLidaContainer.add(dados);
-
-                linha = entrada.readLine();
+            saida.append("macadress;timestamp;cpu_porcentagem;cpu_ociosa_porcentagem;cpu_usuarios_porcentagem;cpu_sistema_porcentagem;cpu_loadavg;ram_porcentagem;ram_mb;ram_gb;ram_disp_porcentagem;ram_disp_mb;ram_disp_gb;ram_swap_porcentagem;ram_swap_mb;ram_swap_gb;disco_porcentagem;disco_mb;disco_gb;disco_livre_porcentagem;disco_livre_mb;disco_livre_gb;disco_throughput_mbs;disco_throughput_gbs;rede_enviados_mb_;rede_recebidos_mb\n"); //primeira linha do csv
+            for(ColetaServidor linhaColeta : listaAlertas) {
+                //String.format para uma string formata, nao printada como printf
+                System.out.println(linhaColeta);
+                saida.write(String.format("%s;%s;%.2f;%.2f;%.2f;%.2f;%s;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f\n",
+                        linhaColeta.getMacAddress(), linhaColeta.getTimestamp(), linhaColeta.getCpu_porcentagem(), linhaColeta.getCpuOciosa(), linhaColeta.getCpuUsuario(), linhaColeta.getCpuSistema(), linhaColeta.getCpuLoadAvg(), linhaColeta.getRam(), linhaColeta.getRamMb(), linhaColeta.getRamGb(),
+                        linhaColeta.getRamDisponivel() , linhaColeta.getRamDisponivelMb(), linhaColeta.getRamDisponivelGb(), linhaColeta.getRamSwap(), linhaColeta.getRamSwapMb(), linhaColeta.getRamSwapGb(), linhaColeta.getDisco(), linhaColeta.getDiscoMb(), linhaColeta.getDiscoGb(), linhaColeta.getDiscoDisponivel(),
+                        linhaColeta.getDiscoDisponivelMb(),linhaColeta.getDiscoDisponivelGb(),linhaColeta.getDiscoThroughputMbs(), linhaColeta.getDiscoThroughputGbs(), linhaColeta.getMbEnviados() ,linhaColeta.getMbRecebidos()));
             }
-        } catch (IOException erro) {
-            System.out.println("Erro ao ler o arquivo");
-            erro.printStackTrace();
+
+        } catch (IOException e) {
+            System.out.println("Erro ao gravar no arquivo");
+            e.printStackTrace();
+            deuRuim = true;
         } finally {
-            try{
-                if (entrada != null) entrada.close();
-                if (arq != null) arq.close();
+            try {
+                saida.close();
             } catch (IOException e) {
-                System.out.println("erro ao fechar o arquivo");
+                System.out.println("Erro ao fechar o arquivo");
+                deuRuim = true;
+            }
+            if(deuRuim) {
+                System.exit(1);
             }
         }
 
-        System.out.println("\nLista lida do arquivo: ");
-        for (ColetaContainer c : listaLidaContainer){
-            System.out.println(c);
-        }
     }
+
+
+//    public void leImportaArquivoCsvContainer (String nomeArq){
+//        Reader arq = null;
+//        BufferedReader entrada = null;
+//        nomeArq += ".csv";
+//        List<ColetaContainer> listaLidaContainer = new ArrayList<>();
+//
+//        try {
+//            arq = new InputStreamReader(new FileInputStream(nomeArq), "UTF-8");
+//            entrada = new BufferedReader(arq);
+//        } catch (IOException erro){
+//            System.out.println("Erro na abertura de arquivo");
+//            System.exit(1);
+//        }
+//
+//        try {
+//            String[] registro;
+//            String linha = entrada.readLine();
+//            registro = linha.split(";");
+//            // Se quiser imprimir o cabeçalho, mantenha a linha abaixo
+//            // System.out.printf("%s %12s %8s %8s %8s %8s %8s\n", registro[0], registro[1], registro[2], registro[3], registro[4], registro[5], registro[6]);
+//
+//            linha = entrada.readLine();
+//            while (linha != null){
+//
+//                // CORREÇÃO DE LÓGICA: Pega a linha atual antes de tratar os zeros
+//                registro = linha.split(";");
+//
+//                // For para remover 0 a esquerda
+//                for (int i = 0; i < registro.length; i++) {
+//                    registro[i] = removeZeroEsquerda(registro[i]);
+//                }
+//
+//                String identificacao_container = registro[0];
+//                String timestamp = registro[1];
+//                Double cpu_container = Double.valueOf(registro[2]);
+//                Double throughput_container = Double.valueOf(registro[3]);
+//                Double ram_container = Double.valueOf(registro[4]);
+//                Double throttled_time_container = Double.valueOf(registro[5]);
+//                Double tps_container = Double.valueOf(registro[6]);
+//
+//                // A LÓGICA DE ALERTA PARA CONTAINER DEVE SER IMPLEMENTADA AQUI, usando o DAO e buscando a métrica correta.
+//
+//                ColetaContainer dados = new ColetaContainer(identificacao_container,timestamp,cpu_container,throughput_container,ram_container,throttled_time_container,tps_container);
+//                listaLidaContainer.add(dados);
+//
+//                linha = entrada.readLine();
+//            }
+//        } catch (IOException erro) {
+//            System.out.println("Erro ao ler o arquivo");
+//            erro.printStackTrace();
+//        } finally {
+//            try{
+//                if (entrada != null) entrada.close();
+//                if (arq != null) arq.close();
+//            } catch (IOException e) {
+//                System.out.println("erro ao fechar o arquivo");
+//            }
+//        }
+//
+//        System.out.println("\nLista lida do arquivo: ");
+//        for (ColetaContainer c : listaLidaContainer){
+//            System.out.println(c);
+//        }
+//    }
 }

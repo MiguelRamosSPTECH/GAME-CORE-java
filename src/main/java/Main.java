@@ -1,3 +1,4 @@
+import Entity.ColetaServidor;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 public class Main {
