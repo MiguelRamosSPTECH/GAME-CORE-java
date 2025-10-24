@@ -1,5 +1,5 @@
 package Jira;
-
+import io.github.cdimascio.dotenv.Dotenv;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -9,11 +9,12 @@ import java.util.Base64;
 public class JiraInteraction {
     private static final String DOMINIO_JIRA = "gamecore.atlassian.net";
     private static final String JIRA_EMAIL = "miguel.ramos@sptech.school";
-    private static final String API_TOKEN = "ATATT3xFfGF0ertxdgZtjP9PREf-TZslW-1pQxaNHcC-VDCFSWPwadrCIe1ZMi98G2toJZpXDBuUu8--9DDgJP0MgMUIahoOXwfk1JuDjK69SeqQiV56Knd3T9ESp4OQndFeXH5wdse0ZyXdTilh0yo1cGwMbczfHXKbaX2gGGisOEMnWxNmm2Y=DF189327";
 
     //transformando em base64 para jogar no Basic Auth
     private static String base64Auth() {
-        String credenciais = JIRA_EMAIL+":"+API_TOKEN;
+        Dotenv dotenv = Dotenv.load();
+        String tokenJira = dotenv.get("TOKEN_JIRA");
+        String credenciais = JIRA_EMAIL+":"+tokenJira;
         return "Basic "+Base64.getEncoder().encodeToString(credenciais.getBytes());
     }
 
@@ -70,7 +71,7 @@ public class JiraInteraction {
         try {
             //envia resposta p net e usa o HttpResponse.BodyHandlers para transformar o que vier em string
             HttpResponse<String> resposta = client.send(request, HttpResponse.BodyHandlers.ofString());
-
+            System.out.println(resposta.statusCode());
             if(resposta.statusCode() == 201) {
                 System.out.println("TICKET CRIADO!");
             } else {
