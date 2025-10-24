@@ -1,7 +1,9 @@
 import Entity.*;
+import Jira.JiraInteraction;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -114,7 +116,15 @@ public class CsvProcessor {
                 listaConfigs = this.configuracaoDAO.buscarConfiguracaoLayout(layoutAchado.getId());
 
                 String nomeComponente;
+                String guardaMetrica = "";
                 Boolean linhaEstourada = false;
+
+                //AREA PARA CHAMADO JIRA
+                String tituloAlerta = "";
+                String prioridadeAlerta = "";
+                String descricaoAlerta = "";
+
+                //MENSAGEM QUE SERA EXIBIDA NO CONSOLE
                 String mensagemAlerta = "";
                 for(int i=0;i<cabecalho.length;i++) {
                     nomeComponente = "";
@@ -131,12 +141,19 @@ public class CsvProcessor {
                     for(ConfiguracaoServidor linhaConfig : listaConfigs) {
                         if(nomeComponente.equalsIgnoreCase(linhaConfig.getNome_componente())) {
                             if(linhaConfig.getNome_metrica().equals("%")) {
+                                guardaMetrica = linhaConfig.getNome_metrica();
                                 linhaConfig.setNome_metrica("porcentagem");
                             }
                             if(cabecalhoSeparado[cabecalhoSeparado.length-1].equalsIgnoreCase(linhaConfig.getNome_metrica())) {
                                 if(Double.parseDouble(registro[i]) > Double.parseDouble(linhaConfig.getAlertaLeve())) {
+                                    prioridadeAlerta = "Medium";
                                     linhaEstourada = true;
-                                    mensagemAlerta = registro[1] +" | ALERTA DISPARADO NO SERVIDOR = "+registro[0]+" | MENSAGEM = "+linhaConfig.getNome_componente() + " ESTÁ NA FAIXA DE " + registro[i];
+                                    tituloAlerta = "ALERTA DISPARADO NO SERVIDOR "+servidorAchado.getApelido();
+                                    descricaoAlerta = linhaConfig.getNome_componente()+ " ESTÁ NA FAIXA DE " + registro[i]+guardaMetrica+ ", demorar para resolver pode resultar em sérios problemas à partida e tender a crashar o jogo!";
+                                    mensagemAlerta = registro[1] + tituloAlerta +" | MENSAGEM = "+descricaoAlerta;
+                                }
+                                if(Double.parseDouble(registro[i]) > Double.parseDouble(linhaConfig.getAlertaGrave())) {
+                                    prioridadeAlerta = "Highest";
                                 }
                             }
                         }
@@ -145,6 +162,10 @@ public class CsvProcessor {
                 if(!mensagemAlerta.equals("")) {
                     dadosEmAlertaServidor.add(mensagemAlerta);
                     listaAlertas.add(linhaObj);
+
+                    //CRIA CHAMADO NO JIRA
+                    String dataHoje = LocalDate.now().toString();
+                    JiraInteraction.criarTicket(tituloAlerta, descricaoAlerta, prioridadeAlerta, dataHoje);
 
                 }
 
@@ -199,7 +220,6 @@ public class CsvProcessor {
             saida.append("macadress;timestamp;cpu_porcentagem;cpu_ociosa_porcentagem;cpu_usuarios_porcentagem;cpu_sistema_porcentagem;cpu_loadavg;ram_porcentagem;ram_mb;ram_gb;ram_disp_porcentagem;ram_disp_mb;ram_disp_gb;ram_swap_porcentagem;ram_swap_mb;ram_swap_gb;disco_porcentagem;disco_mb;disco_gb;disco_livre_porcentagem;disco_livre_mb;disco_livre_gb;disco_throughput_mbs;disco_throughput_gbs;rede_enviados_mb_;rede_recebidos_mb\n"); //primeira linha do csv
             for(ColetaServidor linhaColeta : listaAlertas) {
                 //String.format para uma string formata, nao printada como printf
-                System.out.println(linhaColeta);
                 saida.write(String.format("%s;%s;%.2f;%.2f;%.2f;%.2f;%s;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f\n",
                         linhaColeta.getMacAddress(), linhaColeta.getTimestamp(), linhaColeta.getCpu_porcentagem(), linhaColeta.getCpuOciosa(), linhaColeta.getCpuUsuario(), linhaColeta.getCpuSistema(), linhaColeta.getCpuLoadAvg(), linhaColeta.getRam(), linhaColeta.getRamMb(), linhaColeta.getRamGb(),
                         linhaColeta.getRamDisponivel() , linhaColeta.getRamDisponivelMb(), linhaColeta.getRamDisponivelGb(), linhaColeta.getRamSwap(), linhaColeta.getRamSwapMb(), linhaColeta.getRamSwapGb(), linhaColeta.getDisco(), linhaColeta.getDiscoMb(), linhaColeta.getDiscoGb(), linhaColeta.getDiscoDisponivel(),
