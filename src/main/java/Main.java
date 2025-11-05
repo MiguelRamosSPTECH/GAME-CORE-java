@@ -1,4 +1,5 @@
-import Entity.ColetaServidor;
+import Dao.ConfiguracaoServidorDAO;
+import Database.Connection;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 public class Main {

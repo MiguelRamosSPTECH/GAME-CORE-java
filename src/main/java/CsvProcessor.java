@@ -1,3 +1,4 @@
+import Dao.ConfiguracaoServidorDAO;
 import Entity.*;
 import Jira.JiraInteraction;
 
@@ -199,7 +200,6 @@ public class CsvProcessor {
     }
 
     public void gravarArquivoCsv(List<ColetaServidor> listaAlertas, String nomeArquivo) {
-        System.out.println(listaAlertas.size());
         OutputStreamWriter saida = null;
 
         Boolean deuRuim = false;
@@ -243,6 +243,8 @@ public class CsvProcessor {
         }
 
     }
+
+
 
 
 //    public void leImportaArquivoCsvContainer (String nomeArq){
