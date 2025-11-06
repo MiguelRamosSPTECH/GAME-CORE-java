@@ -4,19 +4,22 @@ import Dao.S3Dao;
 import org.springframework.cglib.core.Local;
 
 import java.io.IOException;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 public class S3Service {
-    private final S3Dao s3Dao;
+    private S3Dao s3Dao;
 
-    public S3Service(S3Dao s3Dao) {
-        this.s3Dao = s3Dao;
-    }
 
-    public void pegarCsvBucket() throws IOException {
-        LocalDate date = LocalDate.now();
-
-        String caminhoS3 = "";
+    public void pegarCsvBucket(String regiaoBucket, String nomeBucket) throws IOException {
+        s3Dao = new S3Dao(regiaoBucket, nomeBucket);
+        List<String> csvs = s3Dao.getCsvs();
+        if(csvs.isEmpty()) {
+            System.out.println("======== NENHUM ARQUIVO CSV ENCONTRADO EM TEMPO REAL [X] ===========");
+        } else {
+            s3Dao.readAndSaveFile(csvs);
+        }
     }
 
 }
