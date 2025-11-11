@@ -5,6 +5,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class Main {
     public static void main(String[] args) {
@@ -28,12 +32,13 @@ public class Main {
 //        ConfiguracaoServidorDAO configDao = new ConfiguracaoServidorDAO(jdbcTemplate);
 //
 //        // Criação do processador
-//        CsvProcessor processador = new CsvProcessor(configDao);
+//        Dao.CsvProcessor processador = new Dao.CsvProcessor(configDao);
 //
 //        // Execução
 //        processador.leImportaArquivoCsvServidor("dados_capturados");
         S3Controller s3Controller = new S3Controller();
-        s3Controller.getBucketRaw("us-east-1", "bucket-raw-gamecore");
+        List<String> csvs = s3Controller.getBucketRaw("us-east-1", "bucket-raw-gamecore");
+        s3Controller.csvsToTrusted(csvs);
 
     }
 }

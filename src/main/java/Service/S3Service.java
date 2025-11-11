@@ -12,7 +12,7 @@ public class S3Service {
     private S3Dao s3Dao;
 
 
-    public void pegarCsvBucket(String regiaoBucket, String nomeBucket) throws IOException {
+    public List<String> pegarCsvBucket(String regiaoBucket, String nomeBucket) throws IOException {
         s3Dao = new S3Dao(regiaoBucket, nomeBucket);
         List<String> csvs = s3Dao.getCsvs();
         if(csvs.isEmpty()) {
@@ -20,6 +20,14 @@ public class S3Service {
         } else {
             s3Dao.readAndSaveFile(csvs);
         }
+        return csvs;
+    }
+
+    public void tratarCsvs(String csvName) {
+        //arredondar numeros double e limitar casas decimais
+        //tratar valores nulos
+
+
     }
 
 }

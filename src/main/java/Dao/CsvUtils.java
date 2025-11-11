@@ -1,4 +1,5 @@
-import Dao.ConfiguracaoServidorDAO;
+package Dao;
+
 import Entity.*;
 import Jira.JiraInteraction;
 
@@ -8,13 +9,13 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CsvProcessor {
+public class CsvUtils {
 
     private final ConfiguracaoServidorDAO configuracaoDAO;
     private final List<String> dadosEmAlertaServidor = new ArrayList<>();
     private final List<ColetaServidor> listaAlertas = new ArrayList<>();
 
-    public CsvProcessor(ConfiguracaoServidorDAO configuracaoDAO) {
+    public CsvUtils(ConfiguracaoServidorDAO configuracaoDAO) {
         this.configuracaoDAO = configuracaoDAO;
     }
 
@@ -24,6 +25,12 @@ public class CsvProcessor {
         }
         return s.replaceAll("^0+", "");
     }
+
+//    public Boolean trataNulos() {
+//
+//    }
+
+    public
 
 
     public void leImportaArquivoCsvServidor (String nomeArq){
@@ -247,68 +254,4 @@ public class CsvProcessor {
 
 
 
-//    public void leImportaArquivoCsvContainer (String nomeArq){
-//        Reader arq = null;
-//        BufferedReader entrada = null;
-//        nomeArq += ".csv";
-//        List<ColetaContainer> listaLidaContainer = new ArrayList<>();
-//
-//        try {
-//            arq = new InputStreamReader(new FileInputStream(nomeArq), "UTF-8");
-//            entrada = new BufferedReader(arq);
-//        } catch (IOException erro){
-//            System.out.println("Erro na abertura de arquivo");
-//            System.exit(1);
-//        }
-//
-//        try {
-//            String[] registro;
-//            String linha = entrada.readLine();
-//            registro = linha.split(";");
-//            // Se quiser imprimir o cabeçalho, mantenha a linha abaixo
-//            // System.out.printf("%s %12s %8s %8s %8s %8s %8s\n", registro[0], registro[1], registro[2], registro[3], registro[4], registro[5], registro[6]);
-//
-//            linha = entrada.readLine();
-//            while (linha != null){
-//
-//                // CORREÇÃO DE LÓGICA: Pega a linha atual antes de tratar os zeros
-//                registro = linha.split(";");
-//
-//                // For para remover 0 a esquerda
-//                for (int i = 0; i < registro.length; i++) {
-//                    registro[i] = removeZeroEsquerda(registro[i]);
-//                }
-//
-//                String identificacao_container = registro[0];
-//                String timestamp = registro[1];
-//                Double cpu_container = Double.valueOf(registro[2]);
-//                Double throughput_container = Double.valueOf(registro[3]);
-//                Double ram_container = Double.valueOf(registro[4]);
-//                Double throttled_time_container = Double.valueOf(registro[5]);
-//                Double tps_container = Double.valueOf(registro[6]);
-//
-//                // A LÓGICA DE ALERTA PARA CONTAINER DEVE SER IMPLEMENTADA AQUI, usando o DAO e buscando a métrica correta.
-//
-//                ColetaContainer dados = new ColetaContainer(identificacao_container,timestamp,cpu_container,throughput_container,ram_container,throttled_time_container,tps_container);
-//                listaLidaContainer.add(dados);
-//
-//                linha = entrada.readLine();
-//            }
-//        } catch (IOException erro) {
-//            System.out.println("Erro ao ler o arquivo");
-//            erro.printStackTrace();
-//        } finally {
-//            try{
-//                if (entrada != null) entrada.close();
-//                if (arq != null) arq.close();
-//            } catch (IOException e) {
-//                System.out.println("erro ao fechar o arquivo");
-//            }
-//        }
-//
-//        System.out.println("\nLista lida do arquivo: ");
-//        for (ColetaContainer c : listaLidaContainer){
-//            System.out.println(c);
-//        }
-//    }
 }

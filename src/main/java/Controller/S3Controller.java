@@ -5,6 +5,8 @@ import Service.S3Service;
 
 import java.io.IOError;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class S3Controller {
     private S3Service s3Service;
@@ -14,12 +16,23 @@ public class S3Controller {
     }
 
 
-    public void getBucketRaw(String regiaoBucket, String nomeBucket) {
+    public List<String> getBucketRaw(String regiaoBucket, String nomeBucket) {
+        List<String> result = new ArrayList<>();
         try {
-            s3Service.pegarCsvBucket(regiaoBucket, nomeBucket);
+            result = s3Service.pegarCsvBucket(regiaoBucket, nomeBucket);
         } catch (IOException e) {
             System.out.println("Não foi possível ler ou escrever dados nos csvs do bucket RAW.");
             e.printStackTrace();
         }
+        return result;
+    }
+
+    public void csvsToTrusted(List<String> csvs) {
+        String csvTratado;
+        for(int i=0;i<csvs.size();i++) {
+            csvTratado = csvs.get(i).split("/")[1];
+            s3Service.tratarCsvs(csvTratado);
+        }
+
     }
 }
