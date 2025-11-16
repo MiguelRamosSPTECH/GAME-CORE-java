@@ -1,7 +1,11 @@
 package Service;
 
+import Dao.ConfiguracaoServidorDAO;
+import Dao.CsvUtils;
 import Dao.S3Dao;
+import Database.Connection;
 import org.springframework.cglib.core.Local;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -23,9 +27,18 @@ public class S3Service {
         return csvs;
     }
 
-    public void tratarCsvs(String csvName) {
-        //arredondar numeros double e limitar casas decimais
-        //tratar valores nulos
+    public void tratarCsvs(List<String> csvs) {
+        CsvUtils csv = new CsvUtils();
+
+        String csvTratado;
+        for(int i=0;i<csvs.size();i++) {
+            csvTratado = csvs.get(i).split("/")[1];
+            csv.leTrataArquivoCsv(csvTratado);
+
+        }
+
+
+
 
 
     }

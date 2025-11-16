@@ -5,206 +5,290 @@ import Jira.JiraInteraction;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 public class CsvUtils {
 
-    private final ConfiguracaoServidorDAO configuracaoDAO;
+    private ConfiguracaoServidorDAO configuracaoDAO = null;
     private final List<String> dadosEmAlertaServidor = new ArrayList<>();
     private final List<ColetaServidor> listaAlertas = new ArrayList<>();
 
+    public CsvUtils() {}
     public CsvUtils(ConfiguracaoServidorDAO configuracaoDAO) {
         this.configuracaoDAO = configuracaoDAO;
     }
 
-    public String removeZeroEsquerda(String s){
-        if(s == null){
-            return null;
+
+    public String tratarLinha(String linha){
+        String[] campos = linha.split(";");
+        for(int i=0;i<campos.length;i++) {
+
+            //trata dados nulos para gerar alertas disso para o cara também
+            if(campos[i] == null || campos[i].trim().isEmpty()) {
+                campos[i] = "N/A";
+            }
+            //tirar espaços a+ em branco
+            campos[i] = campos[i].trim();
+
+            //removendo zeros a esquerda
+            campos[i] = campos[i].replaceAll("^0+(?!$)", "");
         }
-        return s.replaceAll("^0+", "");
+        //junta tudo dnv tratado boy
+        return String.join(";", campos);
+
     }
 
-//    public Boolean trataNulos() {
-//
-//    }
+    public void leTrataArquivoCsv(String nomeArq) {
+        S3Dao trusted = new S3Dao("us-east-1", "bucket-trusted-gamecore");
+        String nomeArqTemporario = nomeArq.replaceAll(".csv", "_temp.csv");
 
-    public
+        //pra que o Path?
+        Path pathOriginal = Paths.get(nomeArq);
+        Path pathTemporario = Paths.get(nomeArqTemporario);
 
+        Boolean deuRuim = false; //caso der ruim sair no finally (n pode sair do nada)
 
-    public void leImportaArquivoCsvServidor (String nomeArq){
-        Reader arq = null;
-        BufferedReader entrada = null;
-        nomeArq += ".csv";
-        List<ColetaServidor> listaLidaServidor = new ArrayList<>();
-
-        //Bloco try catch para abrir o arquivo
         try {
-            arq = new InputStreamReader(new FileInputStream(nomeArq), "UTF-8");
-            entrada = new BufferedReader(arq);
-        } catch (IOException erro){
-            System.out.println("Erro na abertura de arquivo");
-            System.exit(1);
-        }
+            //Esses path é para manipular melhor os arquuivo( caminho e blablabla)
+            FileReader leitorArqOriginal = new FileReader(pathOriginal.toFile(), StandardCharsets.UTF_8);
+            Scanner entrada = new Scanner(leitorArqOriginal);
 
-        //try catch para ler o arquivo
-        try {
-            String[] registro;
-            String linha = entrada.readLine();
+            //abrindo arquivo temp
+            OutputStreamWriter saidaTemp = new OutputStreamWriter(
+                    new FileOutputStream(pathTemporario.toFile()),
+                    StandardCharsets.UTF_8
+            );
 
-            // Pula a primeira linha (cabeçalho)
-            registro = linha.split(";");
+            //Loop para ler e gravar os dados
+            while(entrada.hasNextLine()) {
+                String linha = entrada.nextLine();
 
-            String[] cabecalho = registro;
-            System.out.printf("%s %-19s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n",
-                    registro[0], registro[1], registro[2], registro[3], registro[4], registro[5], registro[6], registro[7], registro[8], registro[9],
-                    registro[10], registro[11], registro[12], registro[13], registro[14], registro[15], registro[16], registro[17], registro[18], registro[19],
-                    registro[20], registro[21], registro[22], registro[23], registro[24], registro[25]);
-
-            linha = entrada.readLine();
-            while (linha != null){
-                ColetaServidor linhaObj = new ColetaServidor();
-                registro = linha.split(";");
-
-                //For para tratar e retirar 0 à esquerda
-                for (int i = 0; i < registro.length; i++) {
-                    registro[i] = removeZeroEsquerda(registro[i]);
-                }
-
-                // 1. Extração dos dados (26 campos)
-                linhaObj.setMacAddress(registro[0]);
-                linhaObj.setTimestamp(registro[1]);
-                linhaObj.setCpu_porcentagem(Double.valueOf(registro[2]));
-                linhaObj.setCpuOciosa(Double.valueOf(registro[3]));
-                linhaObj.setCpuUsuario(Double.valueOf(registro[4]));
-                linhaObj.setCpuSistema(Double.valueOf(registro[5]));
-                linhaObj.setCpuLoadAvg(registro[6]);
-                linhaObj.setRam(Double.valueOf(registro[7]));
-                linhaObj.setRamMb(Double.valueOf(registro[8]));
-                linhaObj.setRamGb(Double.valueOf(registro[9]));
-                linhaObj.setRamDisponivel(Double.valueOf(registro[10]));
-                linhaObj.setRamDisponivelMb(Double.valueOf(registro[11]));
-                linhaObj.setRamDisponivelGb(Double.valueOf(registro[12]));
-                linhaObj.setRamSwap(Double.valueOf(registro[13]));
-                linhaObj.setRamSwapMb(Double.valueOf(registro[14]));
-                linhaObj.setRamGb(Double.valueOf(registro[15]));
-                linhaObj.setDisco(Double.valueOf(registro[16]));
-                linhaObj.setDiscoMb(Double.valueOf(registro[17]));
-                linhaObj.setDiscoGb(Double.valueOf(registro[18]));
-                linhaObj.setDiscoDisponivel(Double.valueOf(registro[19]));
-                linhaObj.setDiscoDisponivelMb(Double.valueOf(registro[20]));
-                linhaObj.setDiscoDisponivelGb(Double.valueOf(registro[21]));
-                linhaObj.setDiscoThroughputMbs(Double.valueOf(registro[22]));
-                linhaObj.setDiscoThroughputGbs(Double.valueOf(registro[23]));
-                linhaObj.setMbEnviados(Double.valueOf(registro[24]));
-                linhaObj.setMbRecebidos(Double.valueOf(registro[25]));
-
-
-                Servidor servidorAchado =
-                        this.configuracaoDAO.buscarServidorPorMac(
-                                linhaObj.getMacAddress()
-                        );
-
-                List<ConfiguracaoServidor> listaConfigs = new ArrayList<>();
-                Layout layoutAchado = null;
-                // ESSE IF SE O SERVIDOR NAO TIVER LAYOUT DE PREFERENCIA
-                if(servidorAchado.getFk_layout() == null) {
-                    //PRIMEIRO ACHA LAYOUT
-                    layoutAchado =
-                            this.configuracaoDAO.buscarLayoutPorFkEmpresa(
-                                    servidorAchado.getFk_empresa_servidor()
-                            );
-                }
-                else { //CASO TENHA LAYOUT DE PREFERENCIA O SERVIDOR
-                    layoutAchado =  this.configuracaoDAO.buscarLayoutPorFkLayout(servidorAchado.getFk_layout());
-                }
-
-                //DEPOIS ENTRA NAS CONFIGURACOES DO LAYOUT E PEGA COMPONENTE E METRICA E AS FAIXAS DE ALERTA (LISTA)
-                listaConfigs = this.configuracaoDAO.buscarConfiguracaoLayout(layoutAchado.getId());
-
-                String nomeComponente;
-                String guardaMetrica = "";
-                Boolean linhaEstourada = false;
-
-                //AREA PARA CHAMADO JIRA
-                String tituloAlerta = "";
-                String prioridadeAlerta = "";
-                String descricaoAlerta = "";
-
-                //MENSAGEM QUE SERA EXIBIDA NO CONSOLE
-                String mensagemAlerta = "";
-                for(int i=0;i<cabecalho.length;i++) {
-                    nomeComponente = "";
-                    String[] cabecalhoSeparado = cabecalho[i].toLowerCase().split("_");
-                    if(cabecalhoSeparado.length > 1) {
-                        for(int j=0;j<cabecalhoSeparado.length-1;j++) {
-                            if(nomeComponente != "") {
-                                nomeComponente+="_"+cabecalhoSeparado[j];
-                            } else {
-                                nomeComponente+=cabecalhoSeparado[j];
-                            }
-                        }
+                if(pathOriginal.getFileName().toString().equals(nomeArq) && Files.size(pathOriginal) > 0 && !entrada.hasNextLine()) {
+                    //mantem igal e escreve no temp
+                    saidaTemp.write(linha);
+                    if(entrada.hasNextLine()) {
+                        saidaTemp.write("\n");
                     }
-                    for(ConfiguracaoServidor linhaConfig : listaConfigs) {
-                        if(nomeComponente.equalsIgnoreCase(linhaConfig.getNome_componente())) {
-                            if(linhaConfig.getNome_metrica().equals("%")) {
-                                guardaMetrica = linhaConfig.getNome_metrica();
-                                linhaConfig.setNome_metrica("porcentagem");
-                            }
-                            if(cabecalhoSeparado[cabecalhoSeparado.length-1].equalsIgnoreCase(linhaConfig.getNome_metrica())) {
-                                if(Double.parseDouble(registro[i]) > Double.parseDouble(linhaConfig.getAlertaLeve())) {
-                                    prioridadeAlerta = "Medium";
-                                    linhaEstourada = true;
-                                    tituloAlerta = "ALERTA DISPARADO NO SERVIDOR "+servidorAchado.getApelido();
-                                    descricaoAlerta = linhaConfig.getNome_componente()+ " ESTÁ NA FAIXA DE " + registro[i]+guardaMetrica+ ", demorar para resolver pode resultar em sérios problemas à partida e tender a crashar o jogo!";
-                                    mensagemAlerta = registro[1] + tituloAlerta +" | MENSAGEM = "+descricaoAlerta;
-                                }
-                                if(Double.parseDouble(registro[i]) > Double.parseDouble(linhaConfig.getAlertaGrave())) {
-                                    prioridadeAlerta = "Highest";
-                                }
-                            }
-                        }
-                    }
-                }
-                if(!mensagemAlerta.equals("")) {
-                    dadosEmAlertaServidor.add(mensagemAlerta);
-                    listaAlertas.add(linhaObj);
-
-                    //CRIA CHAMADO NO JIRA
-                    String dataHoje = LocalDate.now().toString();
-                    JiraInteraction.criarTicket(tituloAlerta, descricaoAlerta, prioridadeAlerta, dataHoje);
-
+                    continue;
                 }
 
-                linha = entrada.readLine();
+                //Agr é para tratar os dados men
+                String linhaTrata = tratarLinha(linha);
+
+                saidaTemp.write(linhaTrata);
+                if(entrada.hasNextLine()) {
+                    saidaTemp.write("\n"); //vai quebrando a linha dps de tratar linha todaa
+                }
             }
-        } catch (IOException | NumberFormatException | ArrayIndexOutOfBoundsException erro) { // Incluído AIOOBE para caso o CSV não tenha 26 colunas
-            System.out.println("Erro ao ler ou processar dados do arquivo (Verifique se o CSV tem 26 colunas).");
-            erro.printStackTrace();
+            System.out.println("\n------ DADOS TRATADOS COM SUCESSO NO ARQUIVO TEMPORÁRIO! ------");
+        } catch (FileNotFoundException e) {
+            System.out.println("Arquivo não encontrado +"+ nomeArq);
+            deuRuim = true;
+        } catch (IOException e) {
+            System.out.println("Erro durante o tratamento/leitura/escrita" + e.getMessage());
+            deuRuim = true;
+            e.printStackTrace();
         } finally {
-            try{
-                if (entrada != null) entrada.close();
-                if (arq != null) arq.close();
-            } catch (IOException e) {
-                System.out.println("Erro ao fechar o arquivo.");
+            if(!deuRuim) {
+                try {
+                    Files.move(pathTemporario, pathOriginal, StandardCopyOption.REPLACE_EXISTING);
+                    trusted.uploadCsvToTrusted(nomeArq);
+                    System.out.printf("%s foi sobrescrito e tratado com sucesso.\n", nomeArq);
+                } catch (IOException e) {
+                    System.out.println("Erro ao finalizar a sobrescrita! Arquivo temporário pode ter ficado!");
+                }
+            } else {
+                try {
+                    Files.deleteIfExists(pathTemporario);
+                } catch (IOException e) {
+                    System.out.println("Erro ao tentar deletar o arquivo temporário!");
+                }
+                System.exit(1);
             }
-        }
-        gravarArquivoCsv(listaAlertas, "alertas_capturados");
-
-        // FINALIZAÇÃO: Mostra a lista de alertas
-        System.out.println("\n=================================================");
-        System.out.println("LISTA FINAL DE ALERTA DO SERVIDOR GERADA:");
-        System.out.println("=================================================");
-        if (dadosEmAlertaServidor.isEmpty()) {
-            System.out.println("Nenhum alerta grave detectado nos dados lidos.");
-        } else {
-            for (String linha: dadosEmAlertaServidor){
-                System.out.println(linha);
-            }
-            System.out.println("TOTAL DE ALERTAS: "+ dadosEmAlertaServidor.size());
         }
     }
+
+
+
+//    public void leImportaArquivoCsvServidor (String nomeArq){
+//        Reader arq = null;
+//        BufferedReader entrada = null;
+//        nomeArq += ".csv";
+//        List<ColetaServidor> listaLidaServidor = new ArrayList<>();
+//
+//        //Bloco try catch para abrir o arquivo
+//        try {
+//            arq = new InputStreamReader(new FileInputStream(nomeArq), "UTF-8");
+//            entrada = new BufferedReader(arq);
+//        } catch (IOException erro){
+//            System.out.println("Erro na abertura de arquivo");
+//            System.exit(1);
+//        }
+//
+//        //try catch para ler o arquivo
+//        try {
+//            String[] registro;
+//            String linha = entrada.readLine();
+//
+//            // Pula a primeira linha (cabeçalho)
+//            registro = linha.split(";");
+//
+//            String[] cabecalho = registro;
+//            System.out.printf("%s %-19s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n",
+//                    registro[0], registro[1], registro[2], registro[3], registro[4], registro[5], registro[6], registro[7], registro[8], registro[9],
+//                    registro[10], registro[11], registro[12], registro[13], registro[14], registro[15], registro[16], registro[17], registro[18], registro[19],
+//                    registro[20], registro[21], registro[22], registro[23], registro[24], registro[25]);
+//
+//            linha = entrada.readLine();
+//            while (linha != null){
+//                ColetaServidor linhaObj = new ColetaServidor();
+//                registro = linha.split(";");
+//
+//                //For para tratar e retirar 0 à esquerda
+//                for (int i = 0; i < registro.length; i++) {
+//                    registro[i] = removeZeroEsquerda(registro[i]);
+//                }
+//
+//                // 1. Extração dos dados (26 campos)
+//                linhaObj.setMacAddress(registro[0]);
+//                linhaObj.setTimestamp(registro[1]);
+//                linhaObj.setCpu_porcentagem(Double.valueOf(registro[2]));
+//                linhaObj.setCpuOciosa(Double.valueOf(registro[3]));
+//                linhaObj.setCpuUsuario(Double.valueOf(registro[4]));
+//                linhaObj.setCpuSistema(Double.valueOf(registro[5]));
+//                linhaObj.setCpuLoadAvg(registro[6]);
+//                linhaObj.setRam(Double.valueOf(registro[7]));
+//                linhaObj.setRamMb(Double.valueOf(registro[8]));
+//                linhaObj.setRamGb(Double.valueOf(registro[9]));
+//                linhaObj.setRamDisponivel(Double.valueOf(registro[10]));
+//                linhaObj.setRamDisponivelMb(Double.valueOf(registro[11]));
+//                linhaObj.setRamDisponivelGb(Double.valueOf(registro[12]));
+//                linhaObj.setRamSwap(Double.valueOf(registro[13]));
+//                linhaObj.setRamSwapMb(Double.valueOf(registro[14]));
+//                linhaObj.setRamGb(Double.valueOf(registro[15]));
+//                linhaObj.setDisco(Double.valueOf(registro[16]));
+//                linhaObj.setDiscoMb(Double.valueOf(registro[17]));
+//                linhaObj.setDiscoGb(Double.valueOf(registro[18]));
+//                linhaObj.setDiscoDisponivel(Double.valueOf(registro[19]));
+//                linhaObj.setDiscoDisponivelMb(Double.valueOf(registro[20]));
+//                linhaObj.setDiscoDisponivelGb(Double.valueOf(registro[21]));
+//                linhaObj.setDiscoThroughputMbs(Double.valueOf(registro[22]));
+//                linhaObj.setDiscoThroughputGbs(Double.valueOf(registro[23]));
+//                linhaObj.setMbEnviados(Double.valueOf(registro[24]));
+//                linhaObj.setMbRecebidos(Double.valueOf(registro[25]));
+//
+//
+//                Servidor servidorAchado =
+//                        this.configuracaoDAO.buscarServidorPorMac(
+//                                linhaObj.getMacAddress()
+//                        );
+//
+//                List<ConfiguracaoServidor> listaConfigs = new ArrayList<>();
+//                Layout layoutAchado = null;
+//                // ESSE IF SE O SERVIDOR NAO TIVER LAYOUT DE PREFERENCIA
+//                if(servidorAchado.getFk_layout() == null) {
+//                    //PRIMEIRO ACHA LAYOUT
+//                    layoutAchado =
+//                            this.configuracaoDAO.buscarLayoutPorFkEmpresa(
+//                                    servidorAchado.getFk_empresa_servidor()
+//                            );
+//                }
+//                else { //CASO TENHA LAYOUT DE PREFERENCIA O SERVIDOR
+//                    layoutAchado =  this.configuracaoDAO.buscarLayoutPorFkLayout(servidorAchado.getFk_layout());
+//                }
+//
+//                //DEPOIS ENTRA NAS CONFIGURACOES DO LAYOUT E PEGA COMPONENTE E METRICA E AS FAIXAS DE ALERTA (LISTA)
+//                listaConfigs = this.configuracaoDAO.buscarConfiguracaoLayout(layoutAchado.getId());
+//
+//                String nomeComponente;
+//                String guardaMetrica = "";
+//                Boolean linhaEstourada = false;
+//
+//                //AREA PARA CHAMADO JIRA
+//                String tituloAlerta = "";
+//                String prioridadeAlerta = "";
+//                String descricaoAlerta = "";
+//
+//                //MENSAGEM QUE SERA EXIBIDA NO CONSOLE
+//                String mensagemAlerta = "";
+//                for(int i=0;i<cabecalho.length;i++) {
+//                    nomeComponente = "";
+//                    String[] cabecalhoSeparado = cabecalho[i].toLowerCase().split("_");
+//                    if(cabecalhoSeparado.length > 1) {
+//                        for(int j=0;j<cabecalhoSeparado.length-1;j++) {
+//                            if(nomeComponente != "") {
+//                                nomeComponente+="_"+cabecalhoSeparado[j];
+//                            } else {
+//                                nomeComponente+=cabecalhoSeparado[j];
+//                            }
+//                        }
+//                    }
+//                    for(ConfiguracaoServidor linhaConfig : listaConfigs) {
+//                        if(nomeComponente.equalsIgnoreCase(linhaConfig.getNome_componente())) {
+//                            if(linhaConfig.getNome_metrica().equals("%")) {
+//                                guardaMetrica = linhaConfig.getNome_metrica();
+//                                linhaConfig.setNome_metrica("porcentagem");
+//                            }
+//                            if(cabecalhoSeparado[cabecalhoSeparado.length-1].equalsIgnoreCase(linhaConfig.getNome_metrica())) {
+//                                if(Double.parseDouble(registro[i]) > Double.parseDouble(linhaConfig.getAlertaLeve())) {
+//                                    prioridadeAlerta = "Medium";
+//                                    linhaEstourada = true;
+//                                    tituloAlerta = "ALERTA DISPARADO NO SERVIDOR "+servidorAchado.getApelido();
+//                                    descricaoAlerta = linhaConfig.getNome_componente()+ " ESTÁ NA FAIXA DE " + registro[i]+guardaMetrica+ ", demorar para resolver pode resultar em sérios problemas à partida e tender a crashar o jogo!";
+//                                    mensagemAlerta = registro[1] + tituloAlerta +" | MENSAGEM = "+descricaoAlerta;
+//                                }
+//                                if(Double.parseDouble(registro[i]) > Double.parseDouble(linhaConfig.getAlertaGrave())) {
+//                                    prioridadeAlerta = "Highest";
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//                if(!mensagemAlerta.equals("")) {
+//                    dadosEmAlertaServidor.add(mensagemAlerta);
+//                    listaAlertas.add(linhaObj);
+//
+//                    //CRIA CHAMADO NO JIRA
+//                    String dataHoje = LocalDate.now().toString();
+//                    JiraInteraction.criarTicket(tituloAlerta, descricaoAlerta, prioridadeAlerta, dataHoje);
+//
+//                }
+//
+//                linha = entrada.readLine();
+//            }
+//        } catch (IOException | NumberFormatException | ArrayIndexOutOfBoundsException erro) { // Incluído AIOOBE para caso o CSV não tenha 26 colunas
+//            System.out.println("Erro ao ler ou processar dados do arquivo (Verifique se o CSV tem 26 colunas).");
+//            erro.printStackTrace();
+//        } finally {
+//            try{
+//                if (entrada != null) entrada.close();
+//                if (arq != null) arq.close();
+//            } catch (IOException e) {
+//                System.out.println("Erro ao fechar o arquivo.");
+//            }
+//        }
+//        gravarArquivoCsv(listaAlertas, "alertas_capturados");
+//
+//        // FINALIZAÇÃO: Mostra a lista de alertas
+//        System.out.println("\n================================================");
+//        System.out.println("LISTA FINAL DE ALERTA DO SERVIDOR GERADA:");
+//        System.out.println("=================================================");
+//        if (dadosEmAlertaServidor.isEmpty()) {
+//            System.out.println("Nenhum alerta grave detectado nos dados lidos.");
+//        } else {
+//            for (String linha: dadosEmAlertaServidor){
+//                System.out.println(linha);
+//            }
+//            System.out.println("TOTAL DE ALERTAS: "+ dadosEmAlertaServidor.size());
+//        }
+//    }
 
     public void gravarArquivoCsv(List<ColetaServidor> listaAlertas, String nomeArquivo) {
         OutputStreamWriter saida = null;

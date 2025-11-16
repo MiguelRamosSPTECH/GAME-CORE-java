@@ -2,13 +2,18 @@ package Dao;
 
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -95,5 +100,36 @@ public class S3Dao {
             }
         }
         return true;
+    }
+
+
+    //TRUSTED
+    public void uploadCsvToTrusted(String csv) throws IOException {
+        String dtNow = LocalDateTime.now().format(formatter);
+
+        File fileToUpload = new File(csv);
+
+        String trustedKey = String.format("%s/%s", dtNow.split(" ")[0], csv);
+
+        System.out.printf("[CMD> Iniciando upload do CSV tratado para TRUSTED\n");
+        try {
+
+            //criando req para jogar no trusted
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(this.nomeBucket)
+                    .key(trustedKey)
+                    .contentType("text/csv")
+                    .build();
+
+            //Faz o upload
+            s3Client.putObject(putObjectRequest, RequestBody.fromFile(fileToUpload));
+            System.out.printf("[OK...] = Upload do %s no bucket trusted!!! \n", csv);
+        } catch (SdkClientException e) {
+            System.err.printf("Erro ao enviar CSV para Trusted: %s\n", e.getMessage());
+            throw new IOException("Falha no pipeline Trusted", e);
+        }
+
+
+
     }
 }

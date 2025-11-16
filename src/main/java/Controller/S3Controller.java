@@ -28,11 +28,7 @@ public class S3Controller {
     }
 
     public void csvsToTrusted(List<String> csvs) {
-        String csvTratado;
-        for(int i=0;i<csvs.size();i++) {
-            csvTratado = csvs.get(i).split("/")[1];
-            s3Service.tratarCsvs(csvTratado);
-        }
+        s3Service.tratarCsvs(csvs);
 
     }
 }

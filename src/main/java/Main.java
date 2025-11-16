@@ -22,20 +22,8 @@ public class Main {
         dtNow = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd - HH:mm:ss"));
         System.out.printf("[%s] INFO: Iniciando a execução do script.\n\n", dtNow);
 
-//        // Inicia BD
-//        Connection connection = new Connection();
-//
-//        // Criação do jdbc
-//        JdbcTemplate jdbcTemplate = new JdbcTemplate(connection.getDataSource());
-//
-//        // Criação do acesso aos dados
-//        ConfiguracaoServidorDAO configDao = new ConfiguracaoServidorDAO(jdbcTemplate);
-//
-//        // Criação do processador
-//        Dao.CsvProcessor processador = new Dao.CsvProcessor(configDao);
-//
-//        // Execução
-//        processador.leImportaArquivoCsvServidor("dados_capturados");
+
+
         S3Controller s3Controller = new S3Controller();
         List<String> csvs = s3Controller.getBucketRaw("us-east-1", "bucket-raw-gamecore");
         s3Controller.csvsToTrusted(csvs);
