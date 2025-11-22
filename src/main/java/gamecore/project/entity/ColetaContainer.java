@@ -1,4 +1,4 @@
-package Entity;
+package gamecore.project.entity;
 
 public class ColetaContainer {
     private String identificacao_container;
@@ -77,7 +77,7 @@ public class ColetaContainer {
 
     @Override
     public String toString() {
-        return "Entity.ColetaContainer{" +
+        return "gamecore.project.Entity.ColetaContainer{" +
                 "identificacao_container='" + identificacao_container + '\'' +
                 ", timestamp='" + timestamp + '\'' +
                 ", cpu_container=" + cpu_container +

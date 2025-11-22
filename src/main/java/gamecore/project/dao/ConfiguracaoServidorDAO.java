@@ -1,8 +1,8 @@
-package Dao;
+package gamecore.project.dao;
 
-import Entity.ConfiguracaoServidor;
-import Entity.Layout;
-import Entity.Servidor;
+import gamecore.project.entity.ConfiguracaoServidor;
+import gamecore.project.entity.Layout;
+import gamecore.project.entity.Servidor;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -47,9 +47,10 @@ public class ConfiguracaoServidorDAO {
     public List<ConfiguracaoServidor> buscarConfiguracaoLayout(Integer fkLayout) {
         try {
             String querySql =
-                    "select cs.alertaLeve,cs.alertaGrave, " +
-                            "componente.nome as nome_componente, " +
-                            "metrica.unidadeMedida as nome_metrica " +
+                    "select cs.alertaLeve," +
+                            "cs.alertaGrave, " +
+                            "componente.nome as nomeComponente, " +
+                            "metrica.unidadeMedida" +
                     "from configuracaoservidor cs\n" +
                     "inner join \n" +
                     "componente on \n" +

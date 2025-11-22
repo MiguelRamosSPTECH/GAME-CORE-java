@@ -1,4 +1,4 @@
-package Entity;
+package gamecore.project.entity;
 
 public class Servidor {
     private Integer id;

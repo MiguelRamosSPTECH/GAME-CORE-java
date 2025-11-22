@@ -1,4 +1,4 @@
-package Jira;
+package gamecore.project.jira;
 import io.github.cdimascio.dotenv.Dotenv;
 import java.net.URI;
 import java.net.http.HttpClient;
