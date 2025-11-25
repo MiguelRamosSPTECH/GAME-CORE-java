@@ -1,8 +1,6 @@
 package gamecore.project;
 
 import gamecore.project.csvs.CsvUtils;
-import gamecore.project.database.Connection;
-import org.springframework.jdbc.core.JdbcTemplate;
 import software.amazon.awssdk.regions.Region;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
