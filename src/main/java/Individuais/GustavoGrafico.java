@@ -14,18 +14,14 @@ public class GustavoGrafico {
 
 
 
-    public static class MontarDadosGraficos(Double [] valoresCpu, Double [] valoresRam){
+    public static void MontarDadosGraficos(Double [] valoresCpu, Double [] valoresRam){
         // vai receber uma matriz com todos os valores de uso, da CPU e da RAM
         List<Double> mediasCpu = new ArrayList<>();
-
-        for(int i = 0; i < valoresCpu.length; i++){
-            mediasCpu.add(GustavoRegressao.calcularMedias(valoresCpu[i]));
-        }
+        mediasCpu.add(GustavoRegressao.calcularMedias(valoresCpu));
 
         List<Double> mediasRam = new ArrayList<>();
-        for(int i = 0; i < valoresRam.length; i++){
-            mediasRam.add(GustavoRegressao.calcularMedias(valoresRam[i]));
-        }
+        mediasRam.add(GustavoRegressao.calcularMedias(valoresRam));
+
 
         // Agora salva em um novo CSV os valores de CPU e RAM até o dia atual --- falta
 
@@ -38,8 +34,15 @@ public class GustavoGrafico {
             dias.add(i+1);
         }
 
-        Double [] indicesCpu = GustavoRegressao.calcularRegressao(mediasCpu, dias);
-        Double [] indicesRam = GustavoRegressao.calcularRegressao(mediasRam, dias);
+        // Convertendo os lists para vetor:
+
+        Double[] diasVetor = dias.toArray(new Double[0]);
+        Double[] mediasCpuVetor = mediasCpu.toArray(new Double[0]);
+        Double[] mediasRamVetor = mediasRam.toArray(new Double[0]);
+
+
+        Double [] indicesCpu = GustavoRegressao.calcularRegressao(mediasCpuVetor, diasVetor);
+        Double [] indicesRam = GustavoRegressao.calcularRegressao(mediasRamVetor, diasVetor);
 
         // salva os valores de "a" e "b" da CPU e da RAM em um novo CSV --- falta
     }
