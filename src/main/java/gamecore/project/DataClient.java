@@ -81,6 +81,7 @@ public class DataClient implements RequestHandler<S3Event,String> {
                     //salva configs dos layouts para filtrar nas linhas do csv
                     configsLayoutEmUso = csd.buscarConfiguracaoLayout(layoutEmUso.getId());
                     context.getLogger().log("Pegando cada arquivo CSV da pasta: "+ macKey);
+                    context.getLogger().log("CONFIGURAÇÃO EM USO: " + configsLayoutEmUso.toString());
 
 
                     List<String> csvsFilePath = s3Interaction.getArquivosCsvDoMac(sourceBucket, caminhoPastaDia, context, s3Client);
@@ -92,7 +93,7 @@ public class DataClient implements RequestHandler<S3Event,String> {
 
                         try {
                             localFilePath = s3Interaction.readAndSaveFile(csvKey, sourceBucket, s3Client);
-                            csvUtils.readAndGetAlerts(localFilePath, configsLayoutEmUso);
+                            csvUtils.readAndGetAlerts(localFilePath, configsLayoutEmUso, context);
 
                         } catch (IOException e) {
                             context.getLogger().log("Erro ao ler ou salvar o arquivo "+csvKey+" no bucket "+sourceBucket);

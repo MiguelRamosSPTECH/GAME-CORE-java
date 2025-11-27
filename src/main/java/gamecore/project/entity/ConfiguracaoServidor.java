@@ -7,9 +7,9 @@ public class ConfiguracaoServidor {
     private String alertaGrave;
 
     // Chaves estrangeiras (IDs) que identificam a configuração
-    private String nome_componente;
-    private String nome_metrica;
-    private Integer fk_layout;
+    private String nomeComponente;
+    private String nomeMetrica;
+    private Integer fkLayout;
     private Integer id;
 
     public ConfiguracaoServidor() {
@@ -31,29 +31,29 @@ public class ConfiguracaoServidor {
         this.alertaGrave = alertaGrave;
     }
 
-    public String getNome_componente() {
+    public String getNomeComponente() {
 
-        return nome_componente;
+        return nomeComponente;
     }
 
-    public void setNome_componente(String nome_componente) {
-        this.nome_componente = nome_componente;
+    public void setNomeComponente(String nomeComponente) {
+        this.nomeComponente = nomeComponente;
     }
 
-    public String getNome_metrica() {
-        return nome_metrica;
+    public String getNomeMetrica() {
+        return nomeMetrica;
     }
 
-    public void setNome_metrica(String nome_metrica) {
-        this.nome_metrica = nome_metrica;
+    public void setNomeMetrica(String nomeMetrica) {
+        this.nomeMetrica = nomeMetrica;
     }
 
-    public Integer getFk_layout() {
-        return fk_layout;
+    public Integer getFkLayout() {
+        return fkLayout;
     }
 
-    public void setFk_layout(Integer fk_layout) {
-        this.fk_layout = fk_layout;
+    public void setFkLayout(Integer fkLayout) {
+        this.fkLayout = fkLayout;
     }
 
     public Integer getId() {
@@ -69,9 +69,9 @@ public class ConfiguracaoServidor {
         return "ConfiguracaoServidor{" +
                 "alertaLeve='" + alertaLeve + '\'' +
                 ", alertaGrave='" + alertaGrave + '\'' +
-                ", nome_componente='" + nome_componente + '\'' +
-                ", nome_metrica='" + nome_metrica + '\'' +
-                ", fk_layout=" + fk_layout +
+                ", nome_componente='" + nomeComponente + '\'' +
+                ", nome_metrica='" + nomeMetrica + '\'' +
+                ", fk_layout=" + fkLayout +
                 ", id=" + id +
                 '}';
     }

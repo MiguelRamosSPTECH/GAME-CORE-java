@@ -50,7 +50,7 @@ public class ConfiguracaoServidorDAO {
                     "select cs.alertaLeve," +
                             "cs.alertaGrave, " +
                             "componente.nome as nomeComponente, " +
-                            "metrica.unidadeMedida" +
+                            "metrica.unidadeMedida as nomeMetrica " +
                     "from configuracaoservidor cs\n" +
                     "inner join \n" +
                     "componente on \n" +

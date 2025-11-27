@@ -1,6 +1,9 @@
 package gamecore.project.csvs;
 
+import com.amazonaws.services.lambda.runtime.Context;
 import gamecore.project.entity.ConfiguracaoServidor;
+import org.joda.time.DateTimeZone;
+import java.time.LocalDateTime;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -8,6 +11,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 public class CsvUtils {
@@ -15,6 +21,7 @@ public class CsvUtils {
 
     public String tratarLinha(String linha){
         String[] campos = linha.split(";");
+        Boolean camposNotConverted = false;
         for(int i=0;i<campos.length;i++) {
 
             //trata dados nulos para gerar alertas disso para o cara também
@@ -24,9 +31,20 @@ public class CsvUtils {
             //tirar espaços a+ em branco
             campos[i] = campos[i].trim();
 
+            //arredondando
+            try {
+                Double valorDouble = Double.parseDouble(campos[i]);
+                campos[i] = String.format("%.2f", valorDouble);
+            } catch (NumberFormatException  e) {
+                camposNotConverted = true;
+            }
+
             //removendo zeros a esquerda
-            campos[i] = campos[i].replaceAll("^0+(?!$)", "");
+//            campos[i] = campos[i].replaceAll("^0+(?!$)", "");
         }
+
+        if(camposNotConverted) System.out.println("Não foi possível converter alguns campos!");
+
         //junta tudo dnv tratado boy
         return String.join(";", campos);
 
@@ -93,66 +111,91 @@ public class CsvUtils {
     }
 
     //CLIENT
-    public void readAndGetAlerts(String csvLocalPath, List<ConfiguracaoServidor> configsLayoutEmUso) {
-        FileReader arq = null;
-
-        Scanner entrada = null;
+    public void readAndGetAlerts(String csvLocalPath, List<ConfiguracaoServidor> configsLayoutEmUso, Context context) {
+        DateTimeFormatter dataLinhaConvertida = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        List<String> arquivoTodo = null;
+        List<String> linhasDados = null;
         Boolean deuRuim = false;
 
         try {
-            arq = new FileReader(csvLocalPath);
-            entrada = new Scanner(arq).useDelimiter(";|\\n");
-        } catch (FileNotFoundException e) {
-            System.out.println("Arquivo inexistente!");
+            arquivoTodo = Files.readAllLines(Paths.get(csvLocalPath));
+        } catch (IOException e) {
+            context.getLogger().log("Erro ao ler o arquivo!");
+            e.printStackTrace();
             System.exit(1);
         }
 
         try {
-            Boolean cabecalho = true;
+            String linhaCabecalho = arquivoTodo.get(0); //pega primeira linha (cabecalho)
+            String[] camposCabecalho = linhaCabecalho.split(";");
+
             List<LinkedHashSet<Object>> indicesDadosConfiguracao = new ArrayList<>();
 
+            for (int i = 0; i < camposCabecalho.length; i++) {
+                if (!camposCabecalho[i].contains("_")) continue;
+                String pegaComponente = camposCabecalho[i].substring(0, camposCabecalho[i].lastIndexOf("_"));
+                String pegaMetrica = camposCabecalho[i].substring(camposCabecalho[i].lastIndexOf("_"), camposCabecalho[i].length());
+                for (ConfiguracaoServidor config : configsLayoutEmUso) {
+                    if (config.getNomeComponente().equalsIgnoreCase(pegaComponente) && config.getNomeMetrica().equalsIgnoreCase(pegaMetrica)) {
+                        LinkedHashSet<Object> dadosConfigIndex = new LinkedHashSet<>(Arrays.asList(i, config.getAlertaLeve(), config.getAlertaGrave()));
+                        indicesDadosConfiguracao.add(dadosConfigIndex);
+                    }
+                }
+            }
 
-            while(entrada.hasNextLine()) {
-                indicesDadosConfiguracao = new ArrayList<>();
-                String linha = entrada.nextLine();
-                String[] camposSeparados = linha.split(";");
+            //agora for para identificar os alertas
+            LocalDateTime tempoMinimo = LocalDateTime.now(ZoneId.of("America/Sao_Paulo")).minusMinutes(5);
+            linhasDados = arquivoTodo.subList(1 , arquivoTodo.size()); //da primeira linha em diante.
+            Integer contaCpu = 0;
+            Integer contaRam = 0;
 
-                if(cabecalho) {
-                    for(int i=0;i<camposSeparados.length;i++) {
-                        String pegaComponente = camposSeparados[i].substring(0, camposSeparados[i].lastIndexOf("_"));
-                        String pegaMetrica = camposSeparados[i].substring(camposSeparados[i].lastIndexOf("_"), camposSeparados.length);
+            for(int i = linhasDados.size() - 1; i >=0; i--) {
+                String linha = linhasDados.get(i);
+                String[] separaCampos = linha.split(";");
+                LocalDateTime campoEmData = null;
 
-                        for(ConfiguracaoServidor config : configsLayoutEmUso) {
-                            if(config.getNome_componente().equalsIgnoreCase(pegaComponente) && config.getNome_metrica().equalsIgnoreCase(pegaMetrica)) {
-                                LinkedHashSet<Object> dadosConfigIndex = new LinkedHashSet<>(Arrays.asList(i, config.getAlertaLeve(), config.getAlertaGrave()));
-                                indicesDadosConfiguracao.add(dadosConfigIndex);
+                //convertendo campo timestamp para data
+                try {
+                    campoEmData = LocalDateTime.parse(separaCampos[1], dataLinhaConvertida);
+                } catch(DateTimeParseException e) {
+
+                }
+                //pegando campos que estão no período de até 5 minutos!
+                if(campoEmData != null && campoEmData.isAfter(tempoMinimo)) {
+                    //fazendo esquema de período só para cpu e ram!
+                    for (int j = 0; j < indicesDadosConfiguracao.size(); j++) {
+                        LinkedHashSet<Object> configData = indicesDadosConfiguracao.get(j);
+                        Double dadoConvertido = null;
+                        try {
+                            dadoConvertido = Double.parseDouble(separaCampos[(Integer) configData.toArray()[0]]);
+                            context.getLogger().log("DADO CSV: "  +dadoConvertido + "FAIXA ALERTA LEVE: " +(Double) configData.toArray()[1]);
+                            //maior que alerta leve
+                            if (dadoConvertido > (Double) configData.toArray()[1]) {
+                                if (configsLayoutEmUso.get(j).getNomeMetrica().contains("CPU")) {
+                                    contaCpu++;
+                                } else if (configsLayoutEmUso.get(j).getNomeMetrica().contains("RAM")) {
+                                    contaRam++;
+                                } else {
+                                    context.getLogger().log(configData.toArray().toString());
+                                }
                             }
+                        } catch (Exception e) {
+                            context.getLogger().log("Alguns dados não foram convertidos!" + e.getMessage());
+
                         }
 
                     }
-                    cabecalho = false;
-                } else {
-                    for(int i=0;i<indicesDadosConfiguracao.size();i++) {
-                        //dai aqui vai ver se a linha ta em alerta ou nao para poder fazer o esquema de tempo recorrente de alerta pra poder jogar para os json
-                    }
                 }
-            }s
-        } catch (NoSuchElementException e) { //tenta ler proximo dado e n consegue (.next())
-            System.out.println("Dados de leitura inconsistentes e/ou corrompidos!");
-            e.printStackTrace();
-            deuRuim = true;
-        } catch (IllegalStateException e) {//uso do Scanner sem conseguir usar ele
-            System.out.println("Erro na leitura do arquivo!");
+                context.getLogger().log("CONTA CPU: " +  contaCpu + " CONTA RAM: "   +  contaRam);
+
+
+            }
+
+        } catch (Exception e) {
+            context.getLogger().log("Erro no processamento do arquivo!");
             e.printStackTrace();
             deuRuim = true;
         } finally {
-            try {
-                arq.close(); //fechar arquivo
-                entrada.close(); //fechar scanner
-            } catch (IOException e) {
-                System.out.println("Erro ao fechar arquivo!");
-                deuRuim = true;
-            }
             if(deuRuim) {
                 System.exit(1);
             }
