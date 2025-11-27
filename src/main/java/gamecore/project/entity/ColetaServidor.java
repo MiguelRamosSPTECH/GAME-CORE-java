@@ -31,10 +31,24 @@ public class ColetaServidor {
     private Double mbEnviados;
     private Double mbRecebidos;
 
+
+    //novos campos (dash de sre da manu - mudei no python tmb)
+
+    private Integer totalProcessos;
+    private Double ramSwapPorcentagem;
+    private Double cpuSistemaPorcentagem;
+    private Double cpuUsuariosPorcentagem;
+    private Double cpuPorcentagem; // CPU total usada
+    private Double cpuOciosaPorcentagem;
+    private Double ramPorcentagem; // RAM utilizada (porcentagem)
+
     public ColetaServidor() {
     }
 
-    public ColetaServidor(String macAddress, String timestamp, Double cpu_porcentagem, Double cpuOciosa, Double cpuUsuario, Double cpuSistema, String cpuLoadAvg, Double cpuFrequencia, Double cpuFrequenciaMax, Double cpuFrequenciaMin, Double ram, Double ramMb, Double ramGb, Double ramDisponivel, Double ramDisponivelMb, Double ramDisponivelGb, Double ramSwap, Double ramSwapMb, Double ramSwapGb, Double disco, Double discoMb, Double discoGb, Double discoDisponivel, Double discoDisponivelMb, Double discoDisponivelGb, Double discoThroughputMbs, Double discoThroughputGbs, Double mbEnviados, Double mbRecebidos) {
+    public ColetaServidor(String macAddress, String timestamp, Double cpu_porcentagem, Double cpuOciosa, Double cpuUsuario, Double cpuSistema, String cpuLoadAvg, Double cpuFrequencia, Double cpuFrequenciaMax, Double cpuFrequenciaMin,
+                          Double ram, Double ramMb, Double ramGb, Double ramDisponivel, Double ramDisponivelMb, Double ramDisponivelGb, Double ramSwap, Double ramSwapMb, Double ramSwapGb, Double disco, Double discoMb, Double discoGb,
+                          Double discoDisponivel, Double discoDisponivelMb, Double discoDisponivelGb, Double discoThroughputMbs, Double discoThroughputGbs, Double mbEnviados, Double mbRecebidos, Integer totalProcessos,
+                          Double ramSwapPorcentagem, Double cpuSistemaPorcentagem, Double cpuUsuariosPorcentagem, Double cpuPorcentagem, Double cpuOciosaPorcentagem, Double ramPorcentagem) {
         this.macAddress = macAddress;
         this.timestamp = timestamp;
         this.cpu_porcentagem = cpu_porcentagem;
@@ -64,6 +78,13 @@ public class ColetaServidor {
         this.discoThroughputGbs = discoThroughputGbs;
         this.mbEnviados = mbEnviados;
         this.mbRecebidos = mbRecebidos;
+        this.totalProcessos = totalProcessos;
+        this.ramSwapPorcentagem = ramSwapPorcentagem;
+        this.cpuSistemaPorcentagem = cpuSistemaPorcentagem;
+        this.cpuUsuariosPorcentagem = cpuUsuariosPorcentagem;
+        this.cpuPorcentagem = cpuPorcentagem;
+        this.cpuOciosaPorcentagem = cpuOciosaPorcentagem;
+        this.ramPorcentagem = ramPorcentagem;
     }
 
     @Override
@@ -331,5 +352,63 @@ public class ColetaServidor {
 
     public void setMbRecebidos(Double mbRecebidos) {
         this.mbRecebidos = mbRecebidos;
+    }
+
+
+
+    public Integer getTotalProcessos() {
+        return totalProcessos;
+    }
+
+    public void setTotalProcessos(Integer totalProcessos) {
+        this.totalProcessos = totalProcessos;
+    }
+
+    public Double getRamSwapPorcentagem() {
+        return ramSwapPorcentagem;
+    }
+
+    public void setRamSwapPorcentagem(Double ramSwapPorcentagem) {
+        this.ramSwapPorcentagem = ramSwapPorcentagem;
+    }
+
+    public Double getCpuSistemaPorcentagem() {
+        return cpuSistemaPorcentagem;
+    }
+
+    public void setCpuSistemaPorcentagem(Double cpuSistemaPorcentagem) {
+        this.cpuSistemaPorcentagem = cpuSistemaPorcentagem;
+    }
+
+    public Double getCpuUsuariosPorcentagem() {
+        return cpuUsuariosPorcentagem;
+    }
+
+    public void setCpuUsuariosPorcentagem(Double cpuUsuariosPorcentagem) {
+        this.cpuUsuariosPorcentagem = cpuUsuariosPorcentagem;
+    }
+
+    public Double getCpuPorcentagem() {
+        return cpuPorcentagem;
+    }
+
+    public void setCpuPorcentagem(Double cpuPorcentagem) {
+        this.cpuPorcentagem = cpuPorcentagem;
+    }
+
+    public Double getCpuOciosaPorcentagem() {
+        return cpuOciosaPorcentagem;
+    }
+
+    public void setCpuOciosaPorcentagem(Double cpuOciosaPorcentagem) {
+        this.cpuOciosaPorcentagem = cpuOciosaPorcentagem;
+    }
+
+    public Double getRamPorcentagem() {
+        return ramPorcentagem;
+    }
+
+    public void setRamPorcentagem(Double ramPorcentagem) {
+        this.ramPorcentagem = ramPorcentagem;
     }
 }

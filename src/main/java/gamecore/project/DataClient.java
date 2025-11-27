@@ -1,3 +1,4 @@
+
 package gamecore.project;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -8,8 +9,11 @@ import gamecore.project.csvs.CsvUtils;
 import gamecore.project.dao.ConfiguracaoServidorDAO;
 import gamecore.project.database.Connection;
 import gamecore.project.entity.ConfiguracaoServidor;
+import gamecore.project.entity.DashboardData; // capturar o resultado do processamento
 import gamecore.project.entity.Layout;
 import gamecore.project.entity.Servidor;
+import gamecore.project.mappers.Mapper; // pra botar no s3 dps
+import gamecore.project.processors.DashboardProcessor; //  processador principal
 import org.springframework.jdbc.core.JdbcTemplate;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -20,14 +24,20 @@ import java.util.List;
 import java.util.Set;
 
 public class DataClient implements RequestHandler<S3Event,String> {
+
+
     private static final String DESTINATION_BUCKET = "gamecore-bucket-client";
     private static final Region AWS_REGION = Region.US_EAST_1;
+
 
     private final S3Interaction s3Interaction = new S3Interaction();
     private final CsvUtils csvUtils = new CsvUtils();
 
+    //componentes da dashboard
+    private final DashboardProcessor dashboardProcessor = new DashboardProcessor();
+    private final Mapper mapper = new Mapper(); // deixei ai pra qnd for pro s3
 
-    //Conexao com o banco
+    // Conexao com o banco
     Connection connection = new Connection();
     JdbcTemplate con = new JdbcTemplate(connection.getDataSource());
     ConfiguracaoServidorDAO csd = new ConfiguracaoServidorDAO(con);
@@ -47,7 +57,7 @@ public class DataClient implements RequestHandler<S3Event,String> {
         try(S3Client s3Client = S3Client.builder()
                 .region(AWS_REGION)
                 .build()) {
-            S3Interaction s3Interaction = new S3Interaction();
+            S3Interaction s3Interaction = new S3Interaction(); // Reutiliza a instância local
             Set<String> macCaminhoPastas = s3Interaction.getCaminhosMac(sourceBucket, caminhoPastaDia, context, s3Client);
 
 
@@ -87,28 +97,49 @@ public class DataClient implements RequestHandler<S3Event,String> {
                     List<String> csvsFilePath = s3Interaction.getArquivosCsvDoMac(sourceBucket, caminhoPastaDia, context, s3Client);
                     context.getLogger().log("Arquivos do bucket-trusted encontrados: " + csvsFilePath.size());
 
-                    context.getLogger().log("[STARTING...] -  Iniciando leitura dos csvs para identificação de alerta!");
+                    context.getLogger().log("[STARTING...] -  Iniciando leitura dos csvs para identificação de alerta e dashboard!");
+
+                    // leitura e processamento do csv (E -> T)
                     for(String csvKey: csvsFilePath) {
                         String localFilePath = null;
 
+
                         try {
+                            // pega o csv do trusted (E)
                             localFilePath = s3Interaction.readAndSaveFile(csvKey, sourceBucket, s3Client);
+
+
                             csvUtils.readAndGetAlerts(localFilePath, configsLayoutEmUso, context);
 
-                        } catch (IOException e) {
-                            context.getLogger().log("Erro ao ler ou salvar o arquivo "+csvKey+" no bucket "+sourceBucket);
+                            // processa pra mandar pra dashprocessor (onde rola o T)
+                            DashboardData sumario = dashboardProcessor.generateDashboardSummary(localFilePath);
+
+
+                            // pra fazer o L (kk) tem que botar o nome do bucket aqui (mas tem q ta em outro lambda)
+                            // String jsonPayload = mapper.toJson(sumario);
+                            // s3Interaction.uploadJsonToCurated(jsonPayload, "NOME-DO-MALDITO-BUCKET-DE-DESTINO", "dashboard_data.json", s3Client);
+                            // esse dashboard_data.json é o arquivo q jason (transformado ja) que vai pro s3 e eu puxo do front no s3 view pra botar na dash
+
+                            context.getLogger().log("Dashboard do MAC " + macadress + " processada (apenas E -> T) para o arquivo: " + csvKey);
+
+
+                            //exception generico
+                        } catch (Exception e) {
+                            context.getLogger().log("Erro ao ler ou salvar o arquivo"+csvKey+" no bucket "+sourceBucket);
                             e.printStackTrace();
                         }
                     }
 
                 }
-
-
-
-
             }
+        } catch (Exception e) {
+            context.getLogger().log("Erro crítico no handleRequest: " + e.getMessage());
+            e.printStackTrace();
+            // erro critico
+            return "Erro crítico no pipeline.";
         }
 
+        // sucesso
         return "/";
     }
 }

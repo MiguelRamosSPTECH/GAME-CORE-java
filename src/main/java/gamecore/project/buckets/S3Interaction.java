@@ -2,7 +2,6 @@ package gamecore.project.buckets;
 
 import com.amazonaws.services.lambda.runtime.Context;
 
-// Imports do SDK V2
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -19,6 +18,11 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import java.nio.charset.StandardCharsets;
 
 
 public class S3Interaction {
@@ -131,6 +135,27 @@ public class S3Interaction {
             throw new IOException("Falha no pipeline Trusted", e);
         }
     }
+
+    //testar isso aq p ver se manda o json pro client
+
+//    public void uploadJsonToCurated(String jsonPayload, String bucketName, String key, S3Client s3Client) {
+//
+//        // Converte a String JSON em bytes usando UTF-8
+//        RequestBody requestBody = RequestBody.fromBytes(jsonPayload.getBytes(StandardCharsets.UTF_8));
+//
+//        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+//                .bucket(bucketName)
+//                .key(key)
+//                .contentType("application/json") // Define o tipo de conteúdo como JSON
+//                .build();
+//
+//        s3Client.putObject(putObjectRequest, requestBody);
+//
+//        // Log de sucesso
+//        System.out.println("JSON da Dashboard enviado com sucesso para s3://" + bucketName + "/" + key);
+//    }
+
+
 
 
 

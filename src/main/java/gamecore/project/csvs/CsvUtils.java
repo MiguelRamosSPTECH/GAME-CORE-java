@@ -2,8 +2,6 @@ package gamecore.project.csvs;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import gamecore.project.entity.ConfiguracaoServidor;
-import org.joda.time.DateTimeZone;
-import java.time.LocalDateTime;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -11,6 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -18,10 +18,14 @@ import java.util.*;
 
 public class CsvUtils {
 
+    // VARIÁVEL DE ESTADO CORRIGIDA: Armazena as linhas do dia atual para o módulo Dashboard
+    private List<String[]> filteredLines = new ArrayList<>();
+
 
     public String tratarLinha(String linha){
         String[] campos = linha.split(";");
         Boolean camposNotConverted = false;
+
         for(int i=0;i<campos.length;i++) {
 
             //trata dados nulos para gerar alertas disso para o cara também
@@ -31,11 +35,13 @@ public class CsvUtils {
             //tirar espaços a+ em branco
             campos[i] = campos[i].trim();
 
-            //arredondando
+            //arredondando (Adicionado tratamento para vírgulas e padronização para ponto)
             try {
-                Double valorDouble = Double.parseDouble(campos[i]);
-                campos[i] = String.format("%.2f", valorDouble);
-            } catch (NumberFormatException  e) {
+                // Substitui vírgula por ponto para o parse e tenta converter
+                Double valorDouble = Double.parseDouble(campos[i].replace(",", "."));
+                // Formata com ponto decimal (Locale.US)
+                campos[i] = String.format(Locale.US, "%.2f", valorDouble);
+            } catch (NumberFormatException e) {
                 camposNotConverted = true;
             }
 
@@ -84,7 +90,7 @@ public class CsvUtils {
                 }
             }
             saidaTemp.flush();
-            System.out.println("\n------ DADOS TRATADOS COM SUCESSO NO ARQUIVO TEMPORÁRIO! ------");
+            System.out.println("\nDADOS TRATADOS COM SUCESSO");
         } catch (FileNotFoundException e) {
             System.out.println("Arquivo não encontrado +"+ localFilePath);
             deuRuim = true;
@@ -110,7 +116,7 @@ public class CsvUtils {
         }
     }
 
-    //CLIENT
+    //CLIENT (MÓDULO ALERTA)
     public void readAndGetAlerts(String csvLocalPath, List<ConfiguracaoServidor> configsLayoutEmUso, Context context) {
         DateTimeFormatter dataLinhaConvertida = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         List<String> arquivoTodo = null;
@@ -167,7 +173,8 @@ public class CsvUtils {
                         LinkedHashSet<Object> configData = indicesDadosConfiguracao.get(j);
                         Double dadoConvertido = null;
                         try {
-                            dadoConvertido = Double.parseDouble(separaCampos[(Integer) configData.toArray()[0]]);
+                            // Converte usando replace para aceitar vírgula (já que o tratarLinha não foi executado aqui antes)
+                            dadoConvertido = Double.parseDouble(separaCampos[(Integer) configData.toArray()[0]].replace(",", "."));
                             context.getLogger().log("DADO CSV: "  +dadoConvertido + "FAIXA ALERTA LEVE: " +(Double) configData.toArray()[1]);
                             //maior que alerta leve
                             if (dadoConvertido > (Double) configData.toArray()[1]) {
@@ -203,4 +210,40 @@ public class CsvUtils {
 
     }
 
+
+    // le o arquico csv baixado do trusted e retorna so linhas coma data do dia atual (sem isso ia ter q processar o historico inteiro de dias anteriores e ia demorar dms)
+    // isso vai pra dash (nao é a questão de alerta)
+    public List<String[]> readRawLinesFilterByDate(String localFilePath) throws IOException {
+        // Zera a lista a cada nova chamada
+        this.filteredLines = new ArrayList<>();
+        LocalDate hoje = LocalDate.now();
+
+        // padrão de timestamp do  python: dd/MM/yyyy HH:mm:ss
+        DateTimeFormatter pythonTimestampFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+
+
+        try (BufferedReader br = new BufferedReader(new FileReader(localFilePath))) {
+            br.readLine(); // Pula o cabeçalho
+
+            String linha;
+            while ((linha = br.readLine()) != null) {
+                String[] campos = linha.split(";"); // Assume o separador ';'
+
+                if (campos.length > 1) {
+                    String timestampStr = campos[1]; // Assume que o timestamp é o segundo campo (índice 1)
+
+                    try {
+                        // Tenta converter o timestamp e compara apenas a data
+                        LocalDateTime timestamp = LocalDateTime.parse(timestampStr, pythonTimestampFormatter);
+                        if (timestamp.toLocalDate().isEqual(hoje)) {
+                            this.filteredLines.add(campos);
+                        }
+                    } catch (DateTimeParseException e) {
+                        // Ignora linhas inválidas
+                    }
+                }
+            }
+        }
+        return this.filteredLines;
+    }
 }
