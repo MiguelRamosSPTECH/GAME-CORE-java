@@ -1,6 +1,8 @@
 package gamecore.project.entity;
 
 public class ColetaServidor {
+
+
     private String macAddress;
     private String timestamp;
     private Double cpu_porcentagem;

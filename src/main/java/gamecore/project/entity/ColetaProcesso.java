@@ -1,6 +1,9 @@
 package gamecore.project.entity;
 
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class ColetaProcesso {
     private String timestamp;
     private Integer pid;
@@ -12,9 +15,9 @@ public class ColetaProcesso {
     private Integer total_threads;
     private Double tempo_execucao;
     private Double throughput_mbs;
-    private Double throughput_gbx;
+    private Double throughput_gbs;
 
-    public ColetaProcesso(String timestamp, Integer pid, Integer ppid, String nome_processo, String status, Double cpu_porcentagem, Double ram_porcentagem, Integer total_threads, Double tempo_execucao, Double throughput_mbs, Double throughput_gbx) {
+    public ColetaProcesso(String timestamp, Integer pid, Integer ppid, String nome_processo, String status, Double cpu_porcentagem, Double ram_porcentagem, Integer total_threads, Double tempo_execucao, Double throughput_mbs, Double throughput_gbs) {
         this.timestamp = timestamp;
         this.pid = pid;
         this.ppid = ppid;
@@ -25,8 +28,25 @@ public class ColetaProcesso {
         this.total_threads = total_threads;
         this.tempo_execucao = tempo_execucao;
         this.throughput_mbs = throughput_mbs;
-        this.throughput_gbx = throughput_gbx;
+        this.throughput_gbs = throughput_gbs;
     }
+
+    public Map<String, Object> toMap() {
+        Map<String, Object> map = new HashMap<>();
+        // Note que 'timestamp' e 'nome_processo' são omitidos pois virarão chaves no JSON final.
+        map.put("pid", this.pid);
+        map.put("ppid", this.ppid);
+        map.put("status", this.status);
+        map.put("cpu_porcentagem", this.cpu_porcentagem);
+        map.put("ram_porcentagem", this.ram_porcentagem);
+        map.put("total_threads", this.total_threads);
+        map.put("tempo_execucao", this.tempo_execucao);
+        map.put("throughput_mbs", this.throughput_mbs);
+        map.put("throughput_gbs", this.throughput_gbs); // Usando 'throughput_gbs' para corresponder ao JSON
+        return map;
+    }
+
+
 
     public String getTimestamp() {
         return timestamp;
@@ -108,12 +128,12 @@ public class ColetaProcesso {
         this.throughput_mbs = throughput_mbs;
     }
 
-    public Double getThroughput_gbx() {
-        return throughput_gbx;
+    public Double getThroughput_gbs() {
+        return throughput_gbs;
     }
 
-    public void setThroughput_gbx(Double throughput_gbx) {
-        this.throughput_gbx = throughput_gbx;
+    public void setThroughput_gbs(Double throughput_gbx) {
+        this.throughput_gbs = throughput_gbx;
     }
 
     @Override
@@ -129,7 +149,7 @@ public class ColetaProcesso {
                 ", total_threads=" + total_threads +
                 ", tempo_execucao=" + tempo_execucao +
                 ", throughput_mbs=" + throughput_mbs +
-                ", throughput_gbx=" + throughput_gbx +
+                ", throughput_gbx=" + throughput_gbs +
                 '}';
     }
 }

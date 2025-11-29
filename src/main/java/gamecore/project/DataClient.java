@@ -10,17 +10,19 @@ import gamecore.project.database.Connection;
 import gamecore.project.entity.ConfiguracaoServidor;
 import gamecore.project.entity.Layout;
 import gamecore.project.entity.Servidor;
+import gamecore.project.mappers.Mapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 public class DataClient implements RequestHandler<S3Event,String> {
-    private static final String DESTINATION_BUCKET = "gamecore-bucket-client";
+    private static final String DESTINATION_BUCKET = "gamecore-new-bucket-client";
     private static final Region AWS_REGION = Region.US_EAST_1;
 
     private final S3Interaction s3Interaction = new S3Interaction();
@@ -31,6 +33,7 @@ public class DataClient implements RequestHandler<S3Event,String> {
     Connection connection = new Connection();
     JdbcTemplate con = new JdbcTemplate(connection.getDataSource());
     ConfiguracaoServidorDAO csd = new ConfiguracaoServidorDAO(con);
+    Mapper mapper = new Mapper();
 
 
     @Override
@@ -90,10 +93,11 @@ public class DataClient implements RequestHandler<S3Event,String> {
                     context.getLogger().log("[STARTING...] -  Iniciando leitura dos csvs para identificação de alerta!");
                     for(String csvKey: csvsFilePath) {
                         String localFilePath = null;
+                        context.getLogger().log("CHAVE_CSV: "+ csvKey);
+                        try(InputStream csvStream = s3Interaction.getFileStream(sourceBucket, csvKey, s3Client)) {
+                            String arquivoConvertidoJson = mapper.csvToJson(csvStream, context);
 
-                        try {
-                            localFilePath = s3Interaction.readAndSaveFile(csvKey, sourceBucket, s3Client);
-                            csvUtils.readAndGetAlerts(localFilePath, configsLayoutEmUso, context);
+                            s3Interaction.uploadJsonToS3(s3Client, csvKey, arquivoConvertidoJson, context, DESTINATION_BUCKET);
 
                         } catch (IOException e) {
                             context.getLogger().log("Erro ao ler ou salvar o arquivo "+csvKey+" no bucket "+sourceBucket);
@@ -102,10 +106,6 @@ public class DataClient implements RequestHandler<S3Event,String> {
                     }
 
                 }
-
-
-
-
             }
         }
 

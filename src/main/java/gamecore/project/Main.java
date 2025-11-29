@@ -14,7 +14,7 @@ import java.util.Set;
 
 
 public class Main implements RequestHandler<S3Event, String> {
-        private static final String DESTINATION_BUCKET = "gamecore-bucket-trusted";
+        private static final String DESTINATION_BUCKET = "gamecore-new-bucket-trusted";
 
         //client para interagir la com o bucket
         private static final Region AWS_REGION = Region.US_EAST_1;

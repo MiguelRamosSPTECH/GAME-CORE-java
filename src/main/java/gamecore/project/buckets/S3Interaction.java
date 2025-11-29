@@ -12,11 +12,9 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.io.InputStream;
 import java.util.List;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -130,6 +128,30 @@ public class S3Interaction {
             System.err.printf("Erro ao enviar CSV para Trusted: %s\n", e.getMessage());
             throw new IOException("Falha no pipeline Trusted", e);
         }
+    }
+
+
+    public InputStream getFileStream(String bucketName, String key, S3Client s3Client) {
+        GetObjectRequest getObjectRequest =
+                GetObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .build();
+        return s3Client.getObject(getObjectRequest);
+    }
+
+    public void uploadJsonToS3(S3Client s3Client, String sourceKey, String jsonPayload, Context context, String destination_bucket) {
+        // Gera um nome para o arquivo JSON de destino (ex: "pasta/nome_original.json")
+        String destinationKey = sourceKey.replace(".csv", ".json").replace(".CSV", ".json");
+
+        PutObjectRequest putReq = PutObjectRequest.builder()
+                .bucket(destination_bucket)
+                .key(destinationKey)
+                .contentType("application/json")
+                .build();
+
+        s3Client.putObject(putReq, RequestBody.fromString(jsonPayload));
+        context.getLogger().log("JSON enviado para " + destination_bucket + "/" + destinationKey);
     }
 
 
