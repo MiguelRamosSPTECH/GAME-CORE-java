@@ -30,7 +30,7 @@ public class Mapper {
         for (String[] campos : linhas) {
             if (campos.length > 1) { // Garante que a linha não está vazia
                 ColetaServidor coleta = new ColetaServidor();
-                // Sua lógica de mapeamento aqui...
+                // mapeamento
 
                 coletas.add(coleta);
             }
