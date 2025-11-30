@@ -10,6 +10,8 @@ public class JiraInteraction {
     private static final String DOMINIO_JIRA = "gamecore.atlassian.net";
     private static final String JIRA_EMAIL = "miguel.ramos@sptech.school";
 
+    private static final String START_DATE_CUSTOM_FIELD = "customfield_10015";
+
     //transformando em base64 para jogar no Basic Auth
     private static String base64Auth() {
         Dotenv dotenv = Dotenv.load();
@@ -18,13 +20,33 @@ public class JiraInteraction {
         return "Basic "+Base64.getEncoder().encodeToString(credenciais.getBytes());
     }
 
+    //pedi pra ia criar um ngc para tratar as strings "especiais"
+    private static String escapeJsonString(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\") // Escapa a própria barra invertida primeiro
+                .replace("\"", "\\\"")  // Escapa aspas duplas
+                .replace("\n", "\\n")   // Escapa quebras de linha
+                .replace("\r", "");     // Remove retornos de carro
+    }
+
     public static void criarTicket(
             String tituloTicket,
             String descricaoTicket,
             String prioridadeTicket,
-            String dataResolverTicket
+            String startDateTicket
     ) {
         String url = "https://"+DOMINIO_JIRA+"/rest/api/3/issue";
+
+        if(prioridadeTicket.equals("Grave")) {
+            prioridadeTicket = "Highest";
+        } else {
+            prioridadeTicket = "Medium";
+        }
+        // *** PASSO CRÍTICO: Escapando as strings de entrada ***
+        String tituloEscapado = escapeJsonString(tituloTicket);
+        String descricaoEscapada = escapeJsonString(descricaoTicket);
 
         String bodyJson = String.format("""
                 {
@@ -54,10 +76,10 @@ public class JiraInteraction {
                     "priority": {
                         "name":"%s"
                     },
-                    "duedate": "%s"
+                    "%s": "%s"
                   }
                 }
-                """, tituloTicket, descricaoTicket, prioridadeTicket, dataResolverTicket);
+                """, tituloEscapado, descricaoEscapada, prioridadeTicket, START_DATE_CUSTOM_FIELD, startDateTicket);
 
         HttpClient client = HttpClient.newHttpClient();
 
@@ -71,11 +93,12 @@ public class JiraInteraction {
         try {
             //envia resposta p net e usa o HttpResponse.BodyHandlers para transformar o que vier em string
             HttpResponse<String> resposta = client.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println(resposta.statusCode());
+            System.out.println("STATUS CODE TICKET: "+resposta.statusCode());
             if(resposta.statusCode() == 201) {
                 System.out.println("TICKET CRIADO!");
             } else {
                 System.out.println("TICKET NAO CRIADO! Verifique as credenciais e tente novamente!");
+                System.out.println(resposta.body());
             }
         } catch (Exception e) {
             System.out.println("ERRO AO TENTAR LANÇAR UM TICKET (Rede)" + e.getMessage());

@@ -15,4 +15,11 @@ public class ComponenteAlerta {
         public void setNome(String nome) { this.nome = nome; }
         public void setTipo(String tipo) { this.tipo = tipo; }
 
+    @Override
+    public String toString() {
+        return "ComponenteAlerta{" +
+                "nome='" + nome + '\'' +
+                ", tipo='" + tipo + '\'' +
+                '}';
+    }
 }

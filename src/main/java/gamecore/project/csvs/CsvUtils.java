@@ -2,6 +2,7 @@ package gamecore.project.csvs;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import gamecore.project.entity.ConfiguracaoServidor;
+import gamecore.project.mappers.Mapper;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -245,5 +246,108 @@ public class CsvUtils {
             }
         }
         return this.filteredLines;
+    }
+
+
+    public void readAndGetAlerts(String[] linhasCsv, List<ConfiguracaoServidor> configsLayoutEmUso) {
+        Mapper toJson = new Mapper();
+        LocalDateTime ultimaDataAlerta = null;
+        DateTimeFormatter dataLinhaConvertida = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        Boolean deuRuim = false;
+
+        Map<String, Integer> contagemAlertasLeve = new HashMap<>();
+        Map<String, Integer> contagemAlertasGrave = new HashMap<>();
+        Map<String, Double> mediaUltimoDado = new HashMap<>();
+
+
+        try {
+            String linhaCabecalho = linhasCsv[0]; //pega primeira linha (cabecalho)
+            String[] camposCabecalho = linhaCabecalho.split(";");
+
+            List<LinkedHashSet<Object>> indicesDadosConfiguracao = new ArrayList<>();
+
+            for (int i = 0; i < camposCabecalho.length; i++) {
+                if (!camposCabecalho[i].contains("_")) continue;
+                String pegaComponente = camposCabecalho[i].substring(0, camposCabecalho[i].lastIndexOf("_"));
+                String pegaMetrica = camposCabecalho[i].substring(camposCabecalho[i].lastIndexOf("_") + 1);
+                if(pegaMetrica.equals("porcentagem")) pegaMetrica = "%";
+
+                for (ConfiguracaoServidor config : configsLayoutEmUso) {
+                    if (config.getNomeComponente().equalsIgnoreCase(pegaComponente) && config.getNomeMetrica().equalsIgnoreCase(pegaMetrica)) {
+
+                        String nomeCompleto = config.getNomeComponente()+"_"+config.getNomeMetrica();
+                        LinkedHashSet<Object> dadosConfigIndex = new LinkedHashSet<>(Arrays.asList(i, config.getAlertaLeve(), config.getAlertaGrave(), nomeCompleto));
+                        indicesDadosConfiguracao.add(dadosConfigIndex);
+
+                        contagemAlertasLeve.put(nomeCompleto, 0);
+                        contagemAlertasGrave.put(nomeCompleto, 0);
+                    }
+                }
+            }
+
+            //agora for para identificar os alertas
+            LocalDateTime tempoMinimo = LocalDateTime.now(ZoneId.of("America/Sao_Paulo")).minusMinutes(5);
+
+            for(int i = linhasCsv.length - 1; i >=1; i--) {
+                String linha = linhasCsv[i];
+                String[] separaCampos = linha.split(";");
+                LocalDateTime campoEmData = null;
+
+                //convertendo campo timestamp para data
+                try {
+                    campoEmData = LocalDateTime.parse(separaCampos[1], dataLinhaConvertida);
+                } catch(DateTimeParseException e) {
+                    System.out.println(e.getMessage());
+                }
+                //pegando campos que estão no período de até 5 minutos!
+//                if(campoEmData != null && campoEmData.isBefore(tempoMinimo)) {
+                for (int j = 0; j < indicesDadosConfiguracao.size(); j++) {
+                    Boolean entrouAlerta = false;
+                    LinkedHashSet<Object> configData = indicesDadosConfiguracao.get(j);
+                    Double dadoConvertido = null;
+                    try {
+                        dadoConvertido = Double.parseDouble(separaCampos[(Integer) configData.toArray()[0]]);
+                        Double faixaLeve = Double.parseDouble(String.valueOf(configData.toArray()[1]));
+                        Double faixaGrave = Double.parseDouble(String.valueOf(configData.toArray()[2]));
+
+                        //pegar media e ultimo valor de alerta men
+                        mediaUltimoDado.put(String.valueOf(configData.toArray()[3]), dadoConvertido);
+
+                        if(dadoConvertido > faixaGrave){
+                            contagemAlertasGrave.put(String.valueOf(configData.toArray()[3]), contagemAlertasGrave.get(String.valueOf(configData.toArray()[3])) + 1);
+                            mediaUltimoDado.put(String.valueOf(configData.toArray()[3]), dadoConvertido);
+                            entrouAlerta = true;
+                        } else if (dadoConvertido > faixaLeve) {
+                            contagemAlertasLeve.put(String.valueOf(configData.toArray()[3]), contagemAlertasGrave.get(String.valueOf(configData.toArray()[3])) + 1);
+                            mediaUltimoDado.put(String.valueOf(configData.toArray()[3]), dadoConvertido);
+                            entrouAlerta = true;
+                        }
+
+                        if (entrouAlerta) {
+                            if(ultimaDataAlerta == null) {
+                                ultimaDataAlerta = campoEmData;
+                            }
+                        }
+
+                    } catch (Exception e) {
+                        System.out.println("Alguns dados não foram convertidos!" + e.getMessage());
+
+                    }
+                }
+//                }
+            }
+
+            toJson.createJsonAlertGeral(contagemAlertasLeve, contagemAlertasGrave, ultimaDataAlerta, linhasCsv.length, "TESTE1.MAIN", configsLayoutEmUso, mediaUltimoDado);
+
+        } catch (Exception e) {
+            System.out.println("Erro no processamento do arquivo!");
+            e.printStackTrace();
+            deuRuim = true;
+        } finally {
+            if(deuRuim) {
+                System.exit(1);
+            }
+        }
+
     }
 }
