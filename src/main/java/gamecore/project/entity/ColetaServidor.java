@@ -64,23 +64,24 @@ public class ColetaServidor {
     private Double discoThroughputMbs;
     @JsonProperty("disco_throughput_gbs")
     private Double discoThroughputGbs;
-    @JsonProperty("rede_enviados_mb")
+    @JsonProperty("rede_enviados_mb_")
     private Double mbEnviados;
     @JsonProperty("rede_recebidos_mb")
     private Double mbRecebidos;
     @JsonProperty("temperatura_cpu")
     private Double temperaturaCpu;
-
-    // NOVO CAMPO
     @JsonProperty("total_processos_ativos")
-    private Integer totalProcessosAtivos;
+    private Double totalProcessosAtivos;
 
-    private Integer totalProcessos;
+    //@JsonProperty("total_processos_ativos")
+    //private Integer totalProcessosAtivos;
+//
+    //private Integer totalProcessos;
 
     public ColetaServidor() {
     }
 
-    public ColetaServidor(String macAddress, String timestamp, Double cpu, Double cpuOciosaPorcentagem, Double cpuUsuariosPorcentagem, Double cpuSistemaPorcentagem, String cpuLoadAvg, Double cpuFrequencia, Double cpuFrequenciaMax, Double cpuFrequenciaMin, Double ramPorcentagem, Double ramMb, Double ramGb, Double ramDisponivel, Double ramDisponivelMb, Double ramDisponivelGb, Double ramSwapPorcentagem, Double ramSwapMb, Double ramSwapGb, Double disco, Double discoMb, Double discoGb, Double discoDisponivel, Double discoDisponivelMb, Double discoDisponivelGb, Double discoThroughputMbs, Double discoThroughputGbs, Double mbEnviados, Double mbRecebidos, Double temperaturaCpu, Integer totalProcessosAtivos, Integer totalProcessos) {
+    public ColetaServidor(String macAddress, String timestamp, Double cpu, Double cpuOciosaPorcentagem, Double cpuUsuariosPorcentagem, Double cpuSistemaPorcentagem, String cpuLoadAvg, Double cpuFrequencia, Double cpuFrequenciaMax, Double cpuFrequenciaMin, Double ramPorcentagem, Double ramMb, Double ramGb, Double ramDisponivel, Double ramDisponivelMb, Double ramDisponivelGb, Double ramSwapPorcentagem, Double ramSwapMb, Double ramSwapGb, Double disco, Double discoMb, Double discoGb, Double discoDisponivel, Double discoDisponivelMb, Double discoDisponivelGb, Double discoThroughputMbs, Double discoThroughputGbs, Double mbEnviados, Double mbRecebidos, Double temperaturaCpu, Double totalProcessosAtivos) {
         this.macAddress = macAddress;
         this.timestamp = timestamp;
         this.cpu = cpu;
@@ -112,7 +113,7 @@ public class ColetaServidor {
         this.mbRecebidos = mbRecebidos;
         this.temperaturaCpu = temperaturaCpu;
         this.totalProcessosAtivos = totalProcessosAtivos;
-        this.totalProcessos = totalProcessos;
+        //this.totalProcessos = totalProcessos;
     }
 
     @Override
@@ -148,8 +149,6 @@ public class ColetaServidor {
                 ", mbEnviados=" + mbEnviados +
                 ", mbRecebidos=" + mbRecebidos +
                 ", temperaturaCpu=" + temperaturaCpu +
-                ", totalProcessosAtivos=" + totalProcessosAtivos +
-                ", totalProcessos=" + totalProcessos +
                 '}';
     }
 
@@ -393,21 +392,21 @@ public class ColetaServidor {
         this.temperaturaCpu = temperaturaCpu;
     }
 
-    public Integer getTotalProcessosAtivos() {
+    public Double getTotalProcessosAtivos() {
         return totalProcessosAtivos;
     }
 
-    public void setTotalProcessosAtivos(Integer totalProcessosAtivos) {
+    public void setTotalProcessosAtivos(Double totalProcessosAtivos) {
         this.totalProcessosAtivos = totalProcessosAtivos;
     }
 
-    public Integer getTotalProcessos() {
-        return totalProcessos;
-    }
-
-    public void setTotalProcessos(Integer totalProcessos) {
-        this.totalProcessos = totalProcessos;
-    }
+    //public Integer getTotalProcessos() {
+    //    return totalProcessos;
+    //}
+//
+    //public void setTotalProcessos(Integer totalProcessos) {
+    //    this.totalProcessos = totalProcessos;
+    //}
 
 
 }

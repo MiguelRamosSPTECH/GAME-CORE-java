@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 public class DataClient implements RequestHandler<S3Event,String> {
-    private static final String DESTINATION_BUCKET = "gamecore-bucket-bucket-bucket-client";
+    private static final String DESTINATION_BUCKET = "curated-gamecore";
     private static final Region AWS_REGION = Region.US_EAST_1;
 
     private final S3Interaction s3Interaction = new S3Interaction();
@@ -128,6 +128,8 @@ public class DataClient implements RequestHandler<S3Event,String> {
 
                 }
             }
+        } catch (Exception e) {
+            context.getLogger().log("ERRO FATAL NO FLUXO PRINCIPAL: " + e.getMessage());
         }
 
         return "/";

@@ -8,7 +8,7 @@ public class Connection {
     public Connection () {
         dataSource = new BasicDataSource();
         dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        dataSource.setUrl("jdbc:mysql://3.226.255.199:3306/gamecore?useTimezone=true&serverTimezone=UTC");
+        dataSource.setUrl("jdbc:mysql://54.242.126.13:3306/gamecore?useTimezone=true&serverTimezone=UTC");
         dataSource.setUsername("root");
         dataSource.setPassword("gamecore123");
     }

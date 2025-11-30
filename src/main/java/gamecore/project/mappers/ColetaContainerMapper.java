@@ -4,12 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
-import gamecore.project.entity.ColetaContainer; // Importação da nova entidade
+import gamecore.project.entity.ColetaContainer;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -50,17 +49,14 @@ public class ColetaContainerMapper {
                 return "[]";
             }
 
-            // SOLUÇÃO COM ARRAY DE TIPOS para garantir a tipagem correta
-            // Lê para um Array de ColetaContainer
-            ColetaContainer[] containersArray = csvMapper
-                    .readerFor(ColetaContainer[].class)
+            // Cria o iterador tipado
+            com.fasterxml.jackson.databind.MappingIterator<ColetaContainer> containerIterator = csvMapper
+                    .readerFor(ColetaContainer.class)
                     .with(schema)
-                    .readValues(is)
-                    .readAll()
-                    .toArray(new ColetaContainer[0]);
+                    .readValues(is);
 
-            // Converte o Array de volta para uma List<ColetaContainer>
-            containers = Arrays.asList(containersArray);
+            // 🛑 Linha de Correção: Atribui a lista de objetos mapeados
+            containers = containerIterator.readAll();
 
         } catch (IOException e) {
             throw new IOException("Erro ao ler o InputStream CSV e mapear para ColetaContainer: " + e.getMessage(), e);
@@ -83,7 +79,7 @@ public class ColetaContainerMapper {
             List<Map<String, Object>> containersListForTimestamp = new ArrayList<>();
 
             for (ColetaContainer container : containersNoTempo) {
-                // Adiciona o Map de detalhes do container à lista do timestamp
+                // É necessário que o método toMap() exista em ColetaContainer
                 containersListForTimestamp.add(container.toMap());
             }
 
