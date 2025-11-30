@@ -118,11 +118,17 @@ public class CsvUtils {
     }
 
     //CLIENT (MÓDULO ALERTA)
-    public void readAndGetAlerts(String csvLocalPath, List<ConfiguracaoServidor> configsLayoutEmUso, Context context) {
+    public void readAndGetAlerts(String csvLocalPath, List<ConfiguracaoServidor> configsLayoutEmUso, Context context, String nomeServidor) {
+        Mapper toJson = new Mapper();
+        LocalDateTime ultimaDataAlerta = null;
         DateTimeFormatter dataLinhaConvertida = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         List<String> arquivoTodo = null;
         List<String> linhasDados = null;
         Boolean deuRuim = false;
+
+        Map<String,Integer> contagemAlertasLeve = new HashMap<>();
+        Map<String,Integer> contagemAlertasGrave = new HashMap<>();
+        Map<String,Double> mediaUltimoDado = new HashMap<>();
 
         try {
             arquivoTodo = Files.readAllLines(Paths.get(csvLocalPath));
@@ -141,11 +147,18 @@ public class CsvUtils {
             for (int i = 0; i < camposCabecalho.length; i++) {
                 if (!camposCabecalho[i].contains("_")) continue;
                 String pegaComponente = camposCabecalho[i].substring(0, camposCabecalho[i].lastIndexOf("_"));
-                String pegaMetrica = camposCabecalho[i].substring(camposCabecalho[i].lastIndexOf("_"), camposCabecalho[i].length());
+                String pegaMetrica = camposCabecalho[i].substring(camposCabecalho[i].lastIndexOf("_") + 1);
+                if(pegaMetrica.equals("porcentagem")) pegaMetrica = "%";
+
                 for (ConfiguracaoServidor config : configsLayoutEmUso) {
                     if (config.getNomeComponente().equalsIgnoreCase(pegaComponente) && config.getNomeMetrica().equalsIgnoreCase(pegaMetrica)) {
-                        LinkedHashSet<Object> dadosConfigIndex = new LinkedHashSet<>(Arrays.asList(i, config.getAlertaLeve(), config.getAlertaGrave()));
+
+                        String nomeCompleto = config.getNomeComponente()+"_"+config.getNomeMetrica();
+                        LinkedHashSet<Object> dadosConfigIndex = new LinkedHashSet<>(Arrays.asList(i, config.getAlertaLeve(), config.getAlertaGrave(), nomeCompleto));
                         indicesDadosConfiguracao.add(dadosConfigIndex);
+
+                        contagemAlertasLeve.put(nomeCompleto, 0);
+                        contagemAlertasGrave.put(nomeCompleto, 0);
                     }
                 }
             }
@@ -153,8 +166,8 @@ public class CsvUtils {
             //agora for para identificar os alertas
             LocalDateTime tempoMinimo = LocalDateTime.now(ZoneId.of("America/Sao_Paulo")).minusMinutes(5);
             linhasDados = arquivoTodo.subList(1 , arquivoTodo.size()); //da primeira linha em diante.
-            Integer contaCpu = 0;
-            Integer contaRam = 0;
+            // Integer contaCpu = 0;
+            // Integer contaRam = 0;
 
             for(int i = linhasDados.size() - 1; i >=0; i--) {
                 String linha = linhasDados.get(i);
@@ -168,36 +181,45 @@ public class CsvUtils {
 
                 }
                 //pegando campos que estão no período de até 5 minutos!
-                if(campoEmData != null && campoEmData.isAfter(tempoMinimo)) {
+                if(campoEmData != null && campoEmData.isBefore(tempoMinimo)) {
                     //fazendo esquema de período só para cpu e ram!
                     for (int j = 0; j < indicesDadosConfiguracao.size(); j++) {
+                        Boolean entrouAlerta = false;
                         LinkedHashSet<Object> configData = indicesDadosConfiguracao.get(j);
                         Double dadoConvertido = null;
                         try {
-                            // Converte usando replace para aceitar vírgula (já que o tratarLinha não foi executado aqui antes)
-                            dadoConvertido = Double.parseDouble(separaCampos[(Integer) configData.toArray()[0]].replace(",", "."));
-                            context.getLogger().log("DADO CSV: "  +dadoConvertido + "FAIXA ALERTA LEVE: " +(Double) configData.toArray()[1]);
-                            //maior que alerta leve
-                            if (dadoConvertido > (Double) configData.toArray()[1]) {
-                                if (configsLayoutEmUso.get(j).getNomeMetrica().contains("CPU")) {
-                                    contaCpu++;
-                                } else if (configsLayoutEmUso.get(j).getNomeMetrica().contains("RAM")) {
-                                    contaRam++;
-                                } else {
-                                    context.getLogger().log(configData.toArray().toString());
+                            dadoConvertido = Double.parseDouble(separaCampos[(Integer) configData.toArray()[0]]);
+                            Double faixaLeve = Double.parseDouble(String.valueOf(configData.toArray()[1]));
+                            Double faixaGrave = Double.parseDouble(String.valueOf(configData.toArray()[2]));
+
+                            //pegar media e ultimo valor de alerta men
+                            mediaUltimoDado.put(String.valueOf(configData.toArray()[3]), dadoConvertido);
+
+                            if(dadoConvertido > faixaGrave){
+                                contagemAlertasGrave.put(String.valueOf(configData.toArray()[3]), contagemAlertasGrave.get(String.valueOf(configData.toArray()[3])) + 1);
+                                mediaUltimoDado.put(String.valueOf(configData.toArray()[3]), dadoConvertido);
+                                entrouAlerta = true;
+                            } else if (dadoConvertido > faixaLeve) {
+                                contagemAlertasLeve.put(String.valueOf(configData.toArray()[3]), contagemAlertasGrave.get(String.valueOf(configData.toArray()[3])) + 1);
+                                mediaUltimoDado.put(String.valueOf(configData.toArray()[3]), dadoConvertido);
+                                entrouAlerta = true;
+                            }
+
+                            if (entrouAlerta) {
+                                if(ultimaDataAlerta == null) {
+                                    ultimaDataAlerta = campoEmData;
                                 }
                             }
+
                         } catch (Exception e) {
-                            context.getLogger().log("Alguns dados não foram convertidos!" + e.getMessage());
+                            System.out.println("Alguns dados não foram convertidos!" + e.getMessage());
 
                         }
-
                     }
                 }
-                context.getLogger().log("CONTA CPU: " +  contaCpu + " CONTA RAM: "   +  contaRam);
-
-
             }
+
+            toJson.createJsonAlertGeral(contagemAlertasLeve, contagemAlertasGrave, ultimaDataAlerta, linhasDados.size(), nomeServidor, configsLayoutEmUso, mediaUltimoDado);
 
         } catch (Exception e) {
             context.getLogger().log("Erro no processamento do arquivo!");

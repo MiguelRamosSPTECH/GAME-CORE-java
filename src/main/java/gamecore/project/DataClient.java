@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 public class DataClient implements RequestHandler<S3Event,String> {
-    private static final String DESTINATION_BUCKET = "gamecore-new-bucket-client";
+    private static final String DESTINATION_BUCKET = "curated-gamecore";
     private static final Region AWS_REGION = Region.US_EAST_1;
 
     private final S3Interaction s3Interaction = new S3Interaction();
@@ -43,7 +43,7 @@ public class DataClient implements RequestHandler<S3Event,String> {
 
         context.getLogger().log("SOURCE_BUCKET = " +sourceBucket+ " SOURCE_KEY = " +sourceKey);
 
-        //dai aqui eu só filtro pelo dia cuzao
+        //aqui eu só filtro pelo dia
         int pastaDia = sourceKey.indexOf('/');
         String caminhoPastaDia = sourceKey.substring(0, pastaDia + 1);
 
@@ -98,6 +98,7 @@ public class DataClient implements RequestHandler<S3Event,String> {
                             String arquivoConvertidoJson = mapper.csvToJson(csvStream, context);
 
                             s3Interaction.uploadJsonToS3(s3Client, csvKey, arquivoConvertidoJson, context, DESTINATION_BUCKET);
+                            csvUtils.readAndGetAlerts(csvKey, configsLayoutEmUso, context, servidorByMacKey.getApelido());
 
                         } catch (IOException e) {
                             context.getLogger().log("Erro ao ler ou salvar o arquivo "+csvKey+" no bucket "+sourceBucket);

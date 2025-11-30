@@ -13,18 +13,27 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import java.nio.charset.StandardCharsets;
 
+import software.amazon.awssdk.regions.Region;
 
 public class S3Interaction {
 
+    private static final String BUCKET_GOLD_NAME = "curated-gamecore";
+    private static final Region AWS_REGION = Region.US_EAST_1;
+
+    /*
+     * Envia o JSON de KPIs calculados para o bucket S3.
+     * @param jsonContent A string JSON contendo os KPIs.
+     * @param periodo Identificador do período (ex: "7D", "30D").
+     * @return true se o upload foi bem-sucedido.
+     */
 
     //metodo para pegar todos os arquivos do bucket e filtrar pelo mais recente
     public Set<String> getCaminhosMac(String bucket, String diaPrefixo, Context context, S3Client s3Client) {
@@ -179,7 +188,39 @@ public class S3Interaction {
         context.getLogger().log("JSON enviado para " + destination_bucket + "/" + destinationKey);
     }
 
+    public boolean uploadJsonKpi(String jsonContent, String periodo) {
 
+        // Ex: O nome do arquivo será "kpis/sre_kpis_7D_2025-11-29.json"
+        String key = String.format("kpis/sre_kpis_%s_%s.json",
+                periodo,
+                LocalDate.now().format(DateTimeFormatter.ISO_DATE));
+
+        // Inicializa o cliente S3
+        S3Client s3 = S3Client.builder()
+                .region(AWS_REGION)
+                .build();
+
+        try {
+            PutObjectRequest putObject = PutObjectRequest.builder()
+                    .bucket(BUCKET_GOLD_NAME)
+                    .key(key)
+                    .contentType("application/json")
+                    .build();
+
+            // Executa o upload
+            s3.putObject(putObject, RequestBody.fromString(jsonContent));
+
+            System.out.printf("SUCESSO: JSON KPI SRE enviado para s3://%s/%s%n", BUCKET_GOLD_NAME, key);
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("ERRO ao enviar arquivo para o S3: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } finally {
+            s3.close();
+        }
+    }
 
 
 

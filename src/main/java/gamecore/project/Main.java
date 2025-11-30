@@ -14,9 +14,9 @@ import java.util.Set;
 
 
 public class Main implements RequestHandler<S3Event, String> {
-        private static final String DESTINATION_BUCKET = "gamecore-new-bucket-trusted";
+        private static final String DESTINATION_BUCKET = "trusted-gamecore";
 
-        //client para interagir la com o bucket
+        //client para interagir com o bucket
         private static final Region AWS_REGION = Region.US_EAST_1;
 
         private final S3Interaction s3Interaction = new S3Interaction();
@@ -26,10 +26,10 @@ public class Main implements RequestHandler<S3Event, String> {
         @Override
         public String handleRequest(S3Event s3Event, Context context) {
                 String sourceBucket = s3Event.getRecords().get(0).getS3().getBucket().getName();
-                //pega caminho absoluto do arquivo e dai eu filto pelo dia que foi inserido tlgd
+                //pega caminho absoluto do arquivo e filtro pelo dia que foi inserido
                 String sourceKey = s3Event.getRecords().get(0).getS3().getObject().getKey();
 
-                //dai aqui eu só filtro pelo dia cuzao
+                // aqui eu só filtro pelo dia
                 int pastaDia = sourceKey.indexOf('/');
                 String caminhoPastaDia = sourceKey.substring(0, pastaDia + 1);
 
@@ -73,5 +73,4 @@ public class Main implements RequestHandler<S3Event, String> {
                 context.getLogger().log("Envio para o bucket trusted concluído!");
                 return "Processamento ETL concluído com sucesso.";
         }
-
 }

@@ -104,6 +104,48 @@ public class JiraInteraction {
             System.out.println("ERRO AO TENTAR LANÇAR UM TICKET (Rede)" + e.getMessage());
             e.printStackTrace();
         }
+    }
 
+    public static String buscarIncidentesResolvidos(String jqlQuery){
+        String encodedJQL;
+        try {
+            // URLEncoder.encode substitui espaços, aspas, etc. por códigos %
+            encodedJQL = java.net.URLEncoder.encode(jqlQuery, "UTF-8");
+        } catch (java.io.UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        // Endpoint de busca
+        String url = "https://"+DOMINIO_JIRA+"/rest/api/3/search?jql=" + encodedJQL +
+                // Campos que PRECISAMOS extrair (Datas para MTBF/MTTR)
+                "&fields=created,resolutiondate,resolution,status";
+
+        HttpClient client = HttpClient.newHttpClient();
+
+        // Monta a requisição GET
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Content-Type", "application/json")
+                .header("Authorization", base64Auth())
+                .GET() // Usa o método GET
+                .build();
+
+        try {
+            HttpResponse<String> resposta = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (resposta.statusCode() == 200) {
+                // Retorna o JSON bruto de todos os incidentes
+                return resposta.body();
+            } else {
+                System.out.println("ERRO AO BUSCAR TICKETS! Status: " + resposta.statusCode());
+                System.out.println("Resposta: " + resposta.body());
+                return null;
+            }
+        } catch (Exception e) {
+            System.out.println("ERRO AO TENTAR BUSCAR TICKETS (Rede): " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
     }
 }
