@@ -7,9 +7,13 @@ import gamecore.project.buckets.S3Interaction;
 import gamecore.project.csvs.CsvUtils;
 import gamecore.project.dao.ConfiguracaoServidorDAO;
 import gamecore.project.database.Connection;
+import gamecore.project.entity.ColetaContainer;
 import gamecore.project.entity.ConfiguracaoServidor;
 import gamecore.project.entity.Layout;
 import gamecore.project.entity.Servidor;
+import gamecore.project.mappers.ColetaContainerMapper;
+import gamecore.project.mappers.ColetaProcessoMapper;
+import gamecore.project.mappers.ColetaServidorMapper;
 import gamecore.project.mappers.Mapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import software.amazon.awssdk.regions.Region;
@@ -22,7 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 public class DataClient implements RequestHandler<S3Event,String> {
-    private static final String DESTINATION_BUCKET = "curated-gamecore";
+    private static final String DESTINATION_BUCKET = "gamecore-bucket-bucket-bucket-client";
     private static final Region AWS_REGION = Region.US_EAST_1;
 
     private final S3Interaction s3Interaction = new S3Interaction();
@@ -34,6 +38,9 @@ public class DataClient implements RequestHandler<S3Event,String> {
     JdbcTemplate con = new JdbcTemplate(connection.getDataSource());
     ConfiguracaoServidorDAO csd = new ConfiguracaoServidorDAO(con);
     Mapper mapper = new Mapper();
+    ColetaServidorMapper csm = new ColetaServidorMapper();
+    ColetaProcessoMapper cpm = new ColetaProcessoMapper();
+    ColetaContainerMapper ccm = new ColetaContainerMapper();
 
 
     @Override
@@ -92,14 +99,27 @@ public class DataClient implements RequestHandler<S3Event,String> {
 
                     context.getLogger().log("[STARTING...] -  Iniciando leitura dos csvs para identificação de alerta!");
                     for(String csvKey: csvsFilePath) {
+
                         String localFilePath = null;
                         context.getLogger().log("CHAVE_CSV: "+ csvKey);
+
+                        String nomeCsv = csvKey.substring(csvKey.lastIndexOf("/")+1, csvKey.length());
                         try(InputStream csvStream = s3Interaction.getFileStream(sourceBucket, csvKey, s3Client)) {
-                            String arquivoConvertidoJson = mapper.csvToJson(csvStream, context);
+                            String arquivoConvertidoJson = null;
+//                            localFilePath = s3Interaction.readAndSaveFile(csvKey, sourceBucket, s3Client);
+
+                            if(nomeCsv.equals("dados_capturados.csv")){
+                                arquivoConvertidoJson = csm.converterCsvParaJsonArray(csvStream);
+//                                csvUtils.readAndGetAlerts(localFilePath, configsLayoutEmUso, context, servidorByMacKey.getApelido());
+
+                            } else if(nomeCsv.equals("dados_processos.csv")) {
+                                arquivoConvertidoJson = cpm.converterCsvParaJsonAninhado(csvStream);
+                            } else {
+                                arquivoConvertidoJson = ccm.converterCsvParaJsonAninhado(csvStream);
+                            }
+                            context.getLogger().log("ARQUIVO JSON AI: "+ arquivoConvertidoJson);
 
                             s3Interaction.uploadJsonToS3(s3Client, csvKey, arquivoConvertidoJson, context, DESTINATION_BUCKET);
-                            csvUtils.readAndGetAlerts(csvKey, configsLayoutEmUso, context, servidorByMacKey.getApelido());
-
                         } catch (IOException e) {
                             context.getLogger().log("Erro ao ler ou salvar o arquivo "+csvKey+" no bucket "+sourceBucket);
                             e.printStackTrace();

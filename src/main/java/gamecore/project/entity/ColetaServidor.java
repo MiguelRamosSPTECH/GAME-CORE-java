@@ -1,73 +1,103 @@
 package gamecore.project.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ColetaServidor {
 
-
+    @JsonProperty("macadress")
     private String macAddress;
+
+    @JsonProperty("timestamp")
     private String timestamp;
-    private Double cpu_porcentagem;
-    private Double cpuOciosa;
-    private Double cpuUsuario;
-    private Double cpuSistema;
+
+    // Campos de Métricas (Mapeados do CSV)
+    @JsonProperty("cpu_porcentagem")
+    private Double cpu;
+    @JsonProperty("cpu_ociosa_porcentagem")
+    private Double cpuOciosaPorcentagem;
+    @JsonProperty("cpu_usuarios_porcentagem")
+    private Double cpuUsuariosPorcentagem;
+    @JsonProperty("cpu_sistema_porcentagem")
+    private Double cpuSistemaPorcentagem;
+    @JsonProperty("cpu_loadavg")
     private String cpuLoadAvg;
+    @JsonProperty("cpu_freq_mhz")
     private Double cpuFrequencia;
+    @JsonProperty("cpu_freq_max_mhz")
     private Double cpuFrequenciaMax;
+    @JsonProperty("cpu_freq_min_mhz")
     private Double cpuFrequenciaMin;
-    private Double ram;
+    @JsonProperty("ram_porcentagem")
+    private Double ramPorcentagem;
+    @JsonProperty("ram_mb")
     private Double ramMb;
+    @JsonProperty("ram_gb")
     private Double ramGb;
-    private Double ramDisponivel;
+    @JsonProperty("ram_disp_porcentagem")
+    private Double ramDisponivel; // Recebe ram_disp_porcentagem
+    @JsonProperty("ram_disp_mb")
     private Double ramDisponivelMb;
+    @JsonProperty("ram_disp_gb")
     private Double ramDisponivelGb;
-    private Double ramSwap;
+    @JsonProperty("ram_swap_porcentagem")
+    private Double ramSwapPorcentagem;
+    @JsonProperty("ram_swap_mb")
     private Double ramSwapMb;
+    @JsonProperty("ram_swap_gb")
     private Double ramSwapGb;
-    private Double disco;
+    @JsonProperty("disco_porcentagem")
+    private Double disco; // % utilizada
+    @JsonProperty("disco_mb")
     private Double discoMb;
+    @JsonProperty("disco_gb")
     private Double discoGb;
-    private Double discoDisponivel;
+    @JsonProperty("disco_livre_porcentagem")
+    private Double discoDisponivel; // % livre
+    @JsonProperty("disco_livre_mb")
     private Double discoDisponivelMb;
+    @JsonProperty("disco_livre_gb")
     private Double discoDisponivelGb;
+    @JsonProperty("disco_throughput_mbs")
     private Double discoThroughputMbs;
+    @JsonProperty("disco_throughput_gbs")
     private Double discoThroughputGbs;
+    @JsonProperty("rede_enviados_mb")
     private Double mbEnviados;
+    @JsonProperty("rede_recebidos_mb")
     private Double mbRecebidos;
+    @JsonProperty("temperatura_cpu")
+    private Double temperaturaCpu;
 
-
-    //novos campos (dash de sre da manu - mudei no python tmb)
+    // NOVO CAMPO
+    @JsonProperty("total_processos_ativos")
+    private Integer totalProcessosAtivos;
 
     private Integer totalProcessos;
-    private Double ramSwapPorcentagem;
-    private Double cpuSistemaPorcentagem;
-    private Double cpuUsuariosPorcentagem;
-    private Double cpuPorcentagem; // CPU total usada
-    private Double cpuOciosaPorcentagem;
-    private Double ramPorcentagem; // RAM utilizada (porcentagem)
 
     public ColetaServidor() {
     }
 
-    public ColetaServidor(String macAddress, String timestamp, Double cpu_porcentagem, Double cpuOciosa, Double cpuUsuario, Double cpuSistema, String cpuLoadAvg, Double cpuFrequencia, Double cpuFrequenciaMax, Double cpuFrequenciaMin,
-                          Double ram, Double ramMb, Double ramGb, Double ramDisponivel, Double ramDisponivelMb, Double ramDisponivelGb, Double ramSwap, Double ramSwapMb, Double ramSwapGb, Double disco, Double discoMb, Double discoGb,
-                          Double discoDisponivel, Double discoDisponivelMb, Double discoDisponivelGb, Double discoThroughputMbs, Double discoThroughputGbs, Double mbEnviados, Double mbRecebidos, Integer totalProcessos,
-                          Double ramSwapPorcentagem, Double cpuSistemaPorcentagem, Double cpuUsuariosPorcentagem, Double cpuPorcentagem, Double cpuOciosaPorcentagem, Double ramPorcentagem) {
+    public ColetaServidor(String macAddress, String timestamp, Double cpu, Double cpuOciosaPorcentagem, Double cpuUsuariosPorcentagem, Double cpuSistemaPorcentagem, String cpuLoadAvg, Double cpuFrequencia, Double cpuFrequenciaMax, Double cpuFrequenciaMin, Double ramPorcentagem, Double ramMb, Double ramGb, Double ramDisponivel, Double ramDisponivelMb, Double ramDisponivelGb, Double ramSwapPorcentagem, Double ramSwapMb, Double ramSwapGb, Double disco, Double discoMb, Double discoGb, Double discoDisponivel, Double discoDisponivelMb, Double discoDisponivelGb, Double discoThroughputMbs, Double discoThroughputGbs, Double mbEnviados, Double mbRecebidos, Double temperaturaCpu, Integer totalProcessosAtivos, Integer totalProcessos) {
         this.macAddress = macAddress;
         this.timestamp = timestamp;
-        this.cpu_porcentagem = cpu_porcentagem;
-        this.cpuOciosa = cpuOciosa;
-        this.cpuUsuario = cpuUsuario;
-        this.cpuSistema = cpuSistema;
+        this.cpu = cpu;
+        this.cpuOciosaPorcentagem = cpuOciosaPorcentagem;
+        this.cpuUsuariosPorcentagem = cpuUsuariosPorcentagem;
+        this.cpuSistemaPorcentagem = cpuSistemaPorcentagem;
         this.cpuLoadAvg = cpuLoadAvg;
         this.cpuFrequencia = cpuFrequencia;
         this.cpuFrequenciaMax = cpuFrequenciaMax;
         this.cpuFrequenciaMin = cpuFrequenciaMin;
-        this.ram = ram;
+        this.ramPorcentagem = ramPorcentagem;
         this.ramMb = ramMb;
         this.ramGb = ramGb;
         this.ramDisponivel = ramDisponivel;
         this.ramDisponivelMb = ramDisponivelMb;
         this.ramDisponivelGb = ramDisponivelGb;
-        this.ramSwap = ramSwap;
+        this.ramSwapPorcentagem = ramSwapPorcentagem;
         this.ramSwapMb = ramSwapMb;
         this.ramSwapGb = ramSwapGb;
         this.disco = disco;
@@ -80,13 +110,9 @@ public class ColetaServidor {
         this.discoThroughputGbs = discoThroughputGbs;
         this.mbEnviados = mbEnviados;
         this.mbRecebidos = mbRecebidos;
+        this.temperaturaCpu = temperaturaCpu;
+        this.totalProcessosAtivos = totalProcessosAtivos;
         this.totalProcessos = totalProcessos;
-        this.ramSwapPorcentagem = ramSwapPorcentagem;
-        this.cpuSistemaPorcentagem = cpuSistemaPorcentagem;
-        this.cpuUsuariosPorcentagem = cpuUsuariosPorcentagem;
-        this.cpuPorcentagem = cpuPorcentagem;
-        this.cpuOciosaPorcentagem = cpuOciosaPorcentagem;
-        this.ramPorcentagem = ramPorcentagem;
     }
 
     @Override
@@ -94,21 +120,21 @@ public class ColetaServidor {
         return "ColetaServidor{" +
                 "macAddress='" + macAddress + '\'' +
                 ", timestamp='" + timestamp + '\'' +
-                ", cpu_porcentagem=" + cpu_porcentagem +
-                ", cpuOciosa=" + cpuOciosa +
-                ", cpuUsuario=" + cpuUsuario +
-                ", cpuSistema=" + cpuSistema +
+                ", cpu=" + cpu +
+                ", cpuOciosaPorcentagem=" + cpuOciosaPorcentagem +
+                ", cpuUsuariosPorcentagem=" + cpuUsuariosPorcentagem +
+                ", cpuSistemaPorcentagem=" + cpuSistemaPorcentagem +
                 ", cpuLoadAvg='" + cpuLoadAvg + '\'' +
                 ", cpuFrequencia=" + cpuFrequencia +
                 ", cpuFrequenciaMax=" + cpuFrequenciaMax +
                 ", cpuFrequenciaMin=" + cpuFrequenciaMin +
-                ", ram=" + ram +
+                ", ramPorcentagem=" + ramPorcentagem +
                 ", ramMb=" + ramMb +
                 ", ramGb=" + ramGb +
                 ", ramDisponivel=" + ramDisponivel +
                 ", ramDisponivelMb=" + ramDisponivelMb +
                 ", ramDisponivelGb=" + ramDisponivelGb +
-                ", ramSwap=" + ramSwap +
+                ", ramSwapPorcentagem=" + ramSwapPorcentagem +
                 ", ramSwapMb=" + ramSwapMb +
                 ", ramSwapGb=" + ramSwapGb +
                 ", disco=" + disco +
@@ -121,6 +147,9 @@ public class ColetaServidor {
                 ", discoThroughputGbs=" + discoThroughputGbs +
                 ", mbEnviados=" + mbEnviados +
                 ", mbRecebidos=" + mbRecebidos +
+                ", temperaturaCpu=" + temperaturaCpu +
+                ", totalProcessosAtivos=" + totalProcessosAtivos +
+                ", totalProcessos=" + totalProcessos +
                 '}';
     }
 
@@ -140,36 +169,36 @@ public class ColetaServidor {
         this.timestamp = timestamp;
     }
 
-    public Double getCpu_porcentagem() {
-        return cpu_porcentagem;
+    public Double getCpu() {
+        return cpu;
     }
 
-    public void setCpu_porcentagem(Double cpu_porcentagem) {
-        this.cpu_porcentagem = cpu_porcentagem;
+    public void setCpu(Double cpu) {
+        this.cpu = cpu;
     }
 
-    public Double getCpuOciosa() {
-        return cpuOciosa;
+    public Double getCpuOciosaPorcentagem() {
+        return cpuOciosaPorcentagem;
     }
 
-    public void setCpuOciosa(Double cpuOciosa) {
-        this.cpuOciosa = cpuOciosa;
+    public void setCpuOciosaPorcentagem(Double cpuOciosaPorcentagem) {
+        this.cpuOciosaPorcentagem = cpuOciosaPorcentagem;
     }
 
-    public Double getCpuUsuario() {
-        return cpuUsuario;
+    public Double getCpuUsuariosPorcentagem() {
+        return cpuUsuariosPorcentagem;
     }
 
-    public void setCpuUsuario(Double cpuUsuario) {
-        this.cpuUsuario = cpuUsuario;
+    public void setCpuUsuariosPorcentagem(Double cpuUsuariosPorcentagem) {
+        this.cpuUsuariosPorcentagem = cpuUsuariosPorcentagem;
     }
 
-    public Double getCpuSistema() {
-        return cpuSistema;
+    public Double getCpuSistemaPorcentagem() {
+        return cpuSistemaPorcentagem;
     }
 
-    public void setCpuSistema(Double cpuSistema) {
-        this.cpuSistema = cpuSistema;
+    public void setCpuSistemaPorcentagem(Double cpuSistemaPorcentagem) {
+        this.cpuSistemaPorcentagem = cpuSistemaPorcentagem;
     }
 
     public String getCpuLoadAvg() {
@@ -204,12 +233,12 @@ public class ColetaServidor {
         this.cpuFrequenciaMin = cpuFrequenciaMin;
     }
 
-    public Double getRam() {
-        return ram;
+    public Double getRamPorcentagem() {
+        return ramPorcentagem;
     }
 
-    public void setRam(Double ram) {
-        this.ram = ram;
+    public void setRamPorcentagem(Double ramPorcentagem) {
+        this.ramPorcentagem = ramPorcentagem;
     }
 
     public Double getRamMb() {
@@ -252,12 +281,12 @@ public class ColetaServidor {
         this.ramDisponivelGb = ramDisponivelGb;
     }
 
-    public Double getRamSwap() {
-        return ramSwap;
+    public Double getRamSwapPorcentagem() {
+        return ramSwapPorcentagem;
     }
 
-    public void setRamSwap(Double ramSwap) {
-        this.ramSwap = ramSwap;
+    public void setRamSwapPorcentagem(Double ramSwapPorcentagem) {
+        this.ramSwapPorcentagem = ramSwapPorcentagem;
     }
 
     public Double getRamSwapMb() {
@@ -356,7 +385,21 @@ public class ColetaServidor {
         this.mbRecebidos = mbRecebidos;
     }
 
+    public Double getTemperaturaCpu() {
+        return temperaturaCpu;
+    }
 
+    public void setTemperaturaCpu(Double temperaturaCpu) {
+        this.temperaturaCpu = temperaturaCpu;
+    }
+
+    public Integer getTotalProcessosAtivos() {
+        return totalProcessosAtivos;
+    }
+
+    public void setTotalProcessosAtivos(Integer totalProcessosAtivos) {
+        this.totalProcessosAtivos = totalProcessosAtivos;
+    }
 
     public Integer getTotalProcessos() {
         return totalProcessos;
@@ -366,51 +409,5 @@ public class ColetaServidor {
         this.totalProcessos = totalProcessos;
     }
 
-    public Double getRamSwapPorcentagem() {
-        return ramSwapPorcentagem;
-    }
 
-    public void setRamSwapPorcentagem(Double ramSwapPorcentagem) {
-        this.ramSwapPorcentagem = ramSwapPorcentagem;
-    }
-
-    public Double getCpuSistemaPorcentagem() {
-        return cpuSistemaPorcentagem;
-    }
-
-    public void setCpuSistemaPorcentagem(Double cpuSistemaPorcentagem) {
-        this.cpuSistemaPorcentagem = cpuSistemaPorcentagem;
-    }
-
-    public Double getCpuUsuariosPorcentagem() {
-        return cpuUsuariosPorcentagem;
-    }
-
-    public void setCpuUsuariosPorcentagem(Double cpuUsuariosPorcentagem) {
-        this.cpuUsuariosPorcentagem = cpuUsuariosPorcentagem;
-    }
-
-    public Double getCpuPorcentagem() {
-        return cpuPorcentagem;
-    }
-
-    public void setCpuPorcentagem(Double cpuPorcentagem) {
-        this.cpuPorcentagem = cpuPorcentagem;
-    }
-
-    public Double getCpuOciosaPorcentagem() {
-        return cpuOciosaPorcentagem;
-    }
-
-    public void setCpuOciosaPorcentagem(Double cpuOciosaPorcentagem) {
-        this.cpuOciosaPorcentagem = cpuOciosaPorcentagem;
-    }
-
-    public Double getRamPorcentagem() {
-        return ramPorcentagem;
-    }
-
-    public void setRamPorcentagem(Double ramPorcentagem) {
-        this.ramPorcentagem = ramPorcentagem;
-    }
 }

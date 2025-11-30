@@ -133,7 +133,7 @@ public class CsvUtils {
         try {
             arquivoTodo = Files.readAllLines(Paths.get(csvLocalPath));
         } catch (IOException e) {
-            context.getLogger().log("Erro ao ler o arquivo!");
+            context.getLogger().log("CsvUtils - readAndGetAlerts() | Erro ao ler o arquivo!");
             e.printStackTrace();
             System.exit(1);
         }

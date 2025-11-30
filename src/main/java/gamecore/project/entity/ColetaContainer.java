@@ -1,5 +1,11 @@
 package gamecore.project.entity;
 
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Entidade que representa os dados de coleta de um Container em um momento específico.
+ */
 public class ColetaContainer {
     private String identificacao_container;
     private String timestamp;
@@ -9,6 +15,10 @@ public class ColetaContainer {
     private Double throttled_time_container;
     private Double tps_container;
 
+    // Construtor padrão (NECESSÁRIO para Jackson/CsvMapper)
+    public ColetaContainer() {}
+
+    // Construtor completo
     public ColetaContainer(String identificacao_container, String timestamp, Double cpu_container, Double throughput_container, Double ram_container, Double throttled_time_container, Double tps_container) {
         this.identificacao_container = identificacao_container;
         this.timestamp = timestamp;
@@ -18,6 +28,23 @@ public class ColetaContainer {
         this.throttled_time_container = throttled_time_container;
         this.tps_container = tps_container;
     }
+
+    /**
+     * Converte os detalhes do container (excluindo timestamp) para um Map.
+     * Útil para aninhamento no JSON final.
+     */
+    public Map<String, Object> toMap() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("identificacao_container", this.identificacao_container);
+        map.put("cpu_container", this.cpu_container);
+        map.put("throughput_container", this.throughput_container);
+        map.put("ram_container", this.ram_container);
+        map.put("throttled_time_container", this.throttled_time_container);
+        map.put("tps_container", this.tps_container);
+        return map;
+    }
+
+    // --- Getters e Setters ---
 
     public String getIdentificacao_container() {
         return identificacao_container;
