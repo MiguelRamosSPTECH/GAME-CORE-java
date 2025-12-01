@@ -25,6 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import com.amazonaws.services.lambda.runtime.Context;
+import gamecore.project.entity.ColetaServidor;
+
+
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.core.sync.RequestBody;
+
+
 public class DataClient implements RequestHandler<S3Event,String> {
     private static final String DESTINATION_BUCKET = "curated-gamecore";
     private static final Region AWS_REGION = Region.US_EAST_1;
@@ -108,6 +116,8 @@ public class DataClient implements RequestHandler<S3Event,String> {
                             String arquivoConvertidoJson = null;
 //                            localFilePath = s3Interaction.readAndSaveFile(csvKey, sourceBucket, s3Client);
 
+
+
                             if(nomeCsv.equals("dados_capturados.csv")){
                                 arquivoConvertidoJson = csm.converterCsvParaJsonArray(csvStream);
 //                                csvUtils.readAndGetAlerts(localFilePath, configsLayoutEmUso, context, servidorByMacKey.getApelido());
@@ -124,6 +134,54 @@ public class DataClient implements RequestHandler<S3Event,String> {
                             context.getLogger().log("Erro ao ler ou salvar o arquivo "+csvKey+" no bucket "+sourceBucket);
                             e.printStackTrace();
                         }
+
+                        if (nomeCsv.equals("dados_capturados.csv")) {
+                            try {
+                                context.getLogger().log("[DASHBOARD] Gerando JSON estruturado para dashboard...");
+
+                                // Baixa o arquivo e lê as linhas do dia
+                                localFilePath = s3Interaction.readAndSaveFile(csvKey, sourceBucket, s3Client);
+                                List<String[]> linhasFiltradas = csvUtils.readRawLinesFilterByDate(localFilePath);
+
+                                context.getLogger().log("[DASHBOARD] Linhas filtradas do dia: " + linhasFiltradas.size());
+
+                                // Converte linhas para objetos ColetaServidor
+                                List<ColetaServidor> coletas = mapper.mapToColetasServidor(linhasFiltradas);
+
+                                if (!coletas.isEmpty()) {
+                                    // Gera o JSON estruturado
+                                    String jsonDashboard = mapper.gerarJsonDashboard(coletas);
+
+                                    // Define a chave do arquivo dashboard
+                                    String dashboardKey = macKey + "dashboard_metricas_manu.json";
+
+                                    // Faz upload do JSON dashboard
+                                    PutObjectRequest putReq = PutObjectRequest.builder()
+                                            .bucket(DESTINATION_BUCKET)
+                                            .key(dashboardKey)
+                                            .contentType("application/json")
+                                            .build();
+
+                                    s3Client.putObject(putReq, RequestBody.fromString(jsonDashboard));
+                                    context.getLogger().log("[✅ DASHBOARD] Enviado para: " + dashboardKey);
+                                } else {
+                                    context.getLogger().log("[⚠️ DASHBOARD] Nenhum dado do dia atual encontrado");
+                                }
+
+                                // Detectar alertas (se necessário)
+                                csvUtils.readAndGetAlerts(localFilePath, configsLayoutEmUso, context, servidorByMacKey.getApelido());
+
+                            } catch (Exception e) {
+                                context.getLogger().log("[❌ DASHBOARD] Erro ao gerar dashboard: " + e.getMessage());
+                                e.printStackTrace();
+                            }
+                        }
+
+
+                        if (csvKey.contains("dados_capturados.csv")) {
+                            csvUtils.readAndGetAlerts(localFilePath, configsLayoutEmUso, context, servidorByMacKey.getApelido());
+                        }
+
                     }
 
                 }

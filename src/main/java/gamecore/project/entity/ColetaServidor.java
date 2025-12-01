@@ -50,8 +50,6 @@ public class ColetaServidor {
     private Double ramSwapGb;
     @JsonProperty("disco_porcentagem")
     private Double disco; // % utilizada
-    @JsonProperty("disco_mb")
-    private Double discoMb;
     @JsonProperty("disco_gb")
     private Double discoGb;
     @JsonProperty("disco_livre_porcentagem")
@@ -102,7 +100,6 @@ public class ColetaServidor {
         this.ramSwapMb = ramSwapMb;
         this.ramSwapGb = ramSwapGb;
         this.disco = disco;
-        this.discoMb = discoMb;
         this.discoGb = discoGb;
         this.discoDisponivel = discoDisponivel;
         this.discoDisponivelMb = discoDisponivelMb;
@@ -139,7 +136,6 @@ public class ColetaServidor {
                 ", ramSwapMb=" + ramSwapMb +
                 ", ramSwapGb=" + ramSwapGb +
                 ", disco=" + disco +
-                ", discoMb=" + discoMb +
                 ", discoGb=" + discoGb +
                 ", discoDisponivel=" + discoDisponivel +
                 ", discoDisponivelMb=" + discoDisponivelMb +
@@ -310,14 +306,6 @@ public class ColetaServidor {
 
     public void setDisco(Double disco) {
         this.disco = disco;
-    }
-
-    public Double getDiscoMb() {
-        return discoMb;
-    }
-
-    public void setDiscoMb(Double discoMb) {
-        this.discoMb = discoMb;
     }
 
     public Double getDiscoGb() {

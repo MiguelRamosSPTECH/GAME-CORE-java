@@ -3,10 +3,13 @@ package gamecore.project;
 import gamecore.project.csvs.CsvUtils;
 import gamecore.project.dao.ConfiguracaoServidorDAO;
 import gamecore.project.database.Connection;
+import gamecore.project.entity.ColetaServidor;
 import gamecore.project.entity.ConfiguracaoServidor;
 import gamecore.project.entity.Layout;
 import gamecore.project.mappers.ColetaServidorMapper;
+import gamecore.project.mappers.Mapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,7 +21,10 @@ public class ClasseTeste {
         JdbcTemplate con = new JdbcTemplate(connection.getDataSource());
         ConfiguracaoServidorDAO csd = new ConfiguracaoServidorDAO(con);
         CsvUtils csvUtils = new CsvUtils();
-        ColetaServidorMapper csm = new ColetaServidorMapper();
+//        ColetaServidorMapper csm = new ColetaServidorMapper();
+        Mapper csm = new Mapper();
+
+
 
 
         String[] csvMockadoArray = {
@@ -83,6 +89,61 @@ public class ClasseTeste {
             System.out.println(cs.toString());
         }
 
+
+        System.out.println("========================================");
+        System.out.println("TESTANDO GERAÇÃO DO JSON DO DASHBOARD");
+        System.out.println("========================================\n");
+
+        try {
+            // Converte o array de strings em List<String[]>
+            List<String[]> linhas = new ArrayList<>();
+            for (int i = 1; i < csvMockadoArray.length; i++) { // Pula o cabeçalho (índice 0)
+                String[] campos = csvMockadoArray[i].split(";");
+                linhas.add(campos);
+            }
+
+            System.out.println("✅ Linhas processadas: " + linhas.size());
+
+            // Mapeia para ColetaServidor
+            List<ColetaServidor> coletas = csm.mapToColetasServidor(linhas);
+            System.out.println("✅ Objetos ColetaServidor criados: " + coletas.size());
+
+            if (!coletas.isEmpty()) {
+                System.out.println("\n📊 Primeira coleta:");
+                System.out.println("   Timestamp: " + coletas.get(0).getTimestamp());
+                System.out.println("   CPU: " + coletas.get(0).getCpu() + "%");
+                System.out.println("   RAM: " + coletas.get(0).getRamPorcentagem() + "%");
+                System.out.println("   Processos: " + coletas.get(0).getTotalProcessosAtivos());
+
+                System.out.println("\n📊 Última coleta:");
+                ColetaServidor ultima = coletas.get(coletas.size() - 1);
+                System.out.println("   Timestamp: " + ultima.getTimestamp());
+                System.out.println("   CPU: " + ultima.getCpu() + "%");
+                System.out.println("   RAM: " + ultima.getRamPorcentagem() + "%");
+                System.out.println("   Processos: " + ultima.getTotalProcessosAtivos());
+            }
+
+            // Gera o JSON do dashboard
+            System.out.println("\n🔄 Gerando JSON do dashboard...\n");
+            String jsonDashboard = csm.gerarJsonDashboard(coletas);
+
+            // Exibe o JSON gerado
+            System.out.println("========================================");
+            System.out.println("JSON DO DASHBOARD GERADO:");
+            System.out.println("========================================");
+            System.out.println(jsonDashboard);
+            System.out.println("========================================");
+
+        } catch (Exception e) {
+            System.err.println("❌ ERRO ao gerar JSON do dashboard:");
+            e.printStackTrace();
+        }
+
+        System.out.println("\n✅ Teste concluído!");
+    }
+}
+
+
 //        csvUtils.readAndGetAlerts(csvMockadoArray, configsLayoutEmUso);
 //        try {
 //            String jsonDADOS_CAPTURADOS = csm.converterCsvParaJsonArray(csvMockado);
@@ -92,5 +153,4 @@ public class ClasseTeste {
 //            System.out.println("Erro ao converter dados_capturados_simulado.csv para JSON!");
 //        }
 
-    }
-}
+
