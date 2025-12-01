@@ -4,12 +4,15 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import gamecore.project.entity.ColetaServidor;
 import gamecore.project.entity.ComponenteAlerta;
 import gamecore.project.entity.ConfiguracaoServidor;
+import gamecore.project.entity.TimeSeriesPoint;
 import gamecore.project.jira.JiraInteraction;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+
 
 import java.io.InputStream;
 import java.time.ZoneId;
@@ -23,6 +26,204 @@ public class Mapper {
     public Mapper() {
         objectMapper = new ObjectMapper();
 
+    }
+
+    // ===== MÉTODO 1: Mapear CSV → List<ColetaServidor> =====
+    public List<ColetaServidor> mapToColetasServidor(List<String[]> linhas) {
+        List<ColetaServidor> coletas = new ArrayList<>();
+
+        for (String[] linha : linhas) {
+            if (linha.length < 30) continue;
+
+            ColetaServidor c = new ColetaServidor();
+            try {
+                c.setMacAddress(linha[0]);
+                c.setTimestamp(linha[1]);
+                c.setCpu(parseDouble(linha[2]));
+                c.setCpuOciosaPorcentagem(parseDouble(linha[3]));
+                c.setCpuUsuariosPorcentagem(parseDouble(linha[4]));
+                c.setCpuSistemaPorcentagem(parseDouble(linha[5]));
+                c.setCpuLoadAvg(linha[6]);
+                c.setRamPorcentagem(parseDouble(linha[10]));
+                c.setRamDisponivel(parseDouble(linha[13]));
+                c.setRamSwapPorcentagem(parseDouble(linha[16]));
+                c.setTotalProcessosAtivos(parseInt(linha[29])); // Índice 29 para total_processos_ativos
+
+                coletas.add(c);
+            } catch (Exception e) {
+                System.err.println("Erro ao mapear linha: " + e.getMessage());
+            }
+        }
+
+        return coletas;
+    }
+
+    // ===== MÉTODO 2: Gerar JSON do Dashboard =====
+    public String gerarJsonDashboard(List<ColetaServidor> coletas) throws Exception {
+        Map<String, Object> dashboard = new LinkedHashMap<>();
+
+        if (coletas.isEmpty()) {
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(dashboard);
+        }
+
+        ColetaServidor ultimaColeta = coletas.get(coletas.size() - 1);
+
+        // KPIs
+        dashboard.put("dataReferencia", ultimaColeta.getTimestamp().substring(0, 10));
+        dashboard.put("totalProcessos", calcularMaxProcessos(coletas));
+        dashboard.put("totalAlertasMes", 0); // TODO: Buscar do Jira
+        dashboard.put("ramUtilizadaPercent", ultimaColeta.getRamPorcentagem());
+        dashboard.put("ramDisponivelPercent", ultimaColeta.getRamDisponivel());
+
+        // Séries temporais diárias
+        dashboard.put("swapTimeSeries", gerarSerieSwap(coletas));
+        dashboard.put("desempenhoTimeSeries", gerarSerieDesempenho(coletas));
+        dashboard.put("esperaTimeSeries", gerarSerieEspera(coletas));
+        dashboard.put("cpuSystemTimeSeries", gerarSerieCpuSistema(coletas));
+        dashboard.put("cpuUserTimeSeries", gerarSerieCpuUsuario(coletas));
+
+        // Séries mensais (mockadas temporariamente)
+        dashboard.put("alertasMesTimeSeries", gerarAlertasMockados());
+        dashboard.put("picoMaxCpuMesTimeSeries", gerarPicosCpuMockados());
+        dashboard.put("picoMaxRamMesTimeSeries", gerarPicosRamMockados());
+        dashboard.put("picoMaxProcessosMesTimeSeries", gerarPicosProcessosMockados());
+
+        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(dashboard);
+    }
+
+// ===== MÉTODOS AUXILIARES =====
+
+    private List<TimeSeriesPoint> gerarSerieSwap(List<ColetaServidor> coletas) {
+        List<TimeSeriesPoint> serie = new ArrayList<>();
+        for (ColetaServidor c : coletas) {
+            serie.add(new TimeSeriesPoint(
+                    c.getTimestamp().replace(" ", "T") + "Z",
+                    c.getRamSwapPorcentagem()
+            ));
+        }
+        return serie;
+    }
+
+    private List<TimeSeriesPoint> gerarSerieDesempenho(List<ColetaServidor> coletas) {
+        List<TimeSeriesPoint> serie = new ArrayList<>();
+        for (ColetaServidor c : coletas) {
+            double cpuUso = c.getCpu();
+            double cpuOciosa = c.getCpuOciosaPorcentagem();
+            double swap = c.getRamSwapPorcentagem();
+
+            double denominador = cpuOciosa + swap;
+            double desempenho = denominador <= 0.001 ? 1000.0 : cpuUso / denominador;
+
+            serie.add(new TimeSeriesPoint(
+                    c.getTimestamp().replace(" ", "T") + "Z",
+                    Math.round(desempenho * 100.0) / 100.0
+            ));
+        }
+        return serie;
+    }
+
+    private List<TimeSeriesPoint> gerarSerieEspera(List<ColetaServidor> coletas) {
+        List<TimeSeriesPoint> serie = new ArrayList<>();
+        for (ColetaServidor c : coletas) {
+            serie.add(new TimeSeriesPoint(
+                    c.getTimestamp().replace(" ", "T") + "Z",
+                    c.getCpuOciosaPorcentagem() + c.getRamSwapPorcentagem()
+            ));
+        }
+        return serie;
+    }
+
+    private List<TimeSeriesPoint> gerarSerieCpuSistema(List<ColetaServidor> coletas) {
+        List<TimeSeriesPoint> serie = new ArrayList<>();
+        for (ColetaServidor c : coletas) {
+            serie.add(new TimeSeriesPoint(
+                    c.getTimestamp().replace(" ", "T") + "Z",
+                    c.getCpuSistemaPorcentagem()
+            ));
+        }
+        return serie;
+    }
+
+    private List<TimeSeriesPoint> gerarSerieCpuUsuario(List<ColetaServidor> coletas) {
+        List<TimeSeriesPoint> serie = new ArrayList<>();
+        for (ColetaServidor c : coletas) {
+            serie.add(new TimeSeriesPoint(
+                    c.getTimestamp().replace(" ", "T") + "Z",
+                    c.getCpuUsuariosPorcentagem()
+            ));
+        }
+        return serie;
+    }
+
+    private int calcularMaxProcessos(List<ColetaServidor> coletas) {
+        int max = 0;
+        for (ColetaServidor c : coletas) {
+            Integer totalProc = c.getTotalProcessosAtivos();
+            if (totalProc != null && totalProc > max) {
+                max = totalProc;
+            }
+        }
+        return max;
+    }
+
+    private List<TimeSeriesPoint> gerarAlertasMockados() {
+        List<TimeSeriesPoint> serie = new ArrayList<>();
+        for (int i = 1; i <= 30; i++) {
+            serie.add(new TimeSeriesPoint(
+                    String.format("2025-11-%02dT00:00:00Z", i),
+                    Math.random() * 5
+            ));
+        }
+        return serie;
+    }
+
+    private List<TimeSeriesPoint> gerarPicosCpuMockados() {
+        List<TimeSeriesPoint> serie = new ArrayList<>();
+        for (int i = 1; i <= 30; i++) {
+            serie.add(new TimeSeriesPoint(
+                    String.format("2025-11-%02dT00:00:00Z", i),
+                    70 + Math.random() * 30
+            ));
+        }
+        return serie;
+    }
+
+    private List<TimeSeriesPoint> gerarPicosRamMockados() {
+        List<TimeSeriesPoint> serie = new ArrayList<>();
+        for (int i = 1; i <= 30; i++) {
+            serie.add(new TimeSeriesPoint(
+                    String.format("2025-11-%02dT00:00:00Z", i),
+                    60 + Math.random() * 35
+            ));
+        }
+        return serie;
+    }
+
+    private List<TimeSeriesPoint> gerarPicosProcessosMockados() {
+        List<TimeSeriesPoint> serie = new ArrayList<>();
+        for (int i = 1; i <= 30; i++) {
+            serie.add(new TimeSeriesPoint(
+                    String.format("2025-11-%02dT00:00:00Z", i),
+                    150 + Math.random() * 100
+            ));
+        }
+        return serie;
+    }
+
+    private Double parseDouble(String valor) {
+        try {
+            return Double.parseDouble(valor.replace(",", "."));
+        } catch (Exception e) {
+            return 0.0;
+        }
+    }
+
+    private Integer parseInt(String valor) {
+        try {
+            return Integer.parseInt(valor);
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
 
